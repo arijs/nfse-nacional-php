@@ -223,9 +223,32 @@ Sem `--env`, as variáveis são lidas do ambiente do processo.
 | `NFSE_FALLBACK_ASSINATURA` | `0` desliga a nova tentativa com o outro perfil após E0714 |
 | `NFSE_URL_SEFIN`, `NFSE_URL_ADN` | URLs base alternativas (proxy, mock) |
 | `NFSE_TIMEOUT`, `NFSE_CA_BUNDLE` | timeout em segundos; CA bundle se o sistema não tiver |
+| `NFSE_LEIAUTE` | `1.01` ou `nt009`; padrão: o que a Sefin do ambiente aplica, ver abaixo |
 
 `Configuracao::doAmbiente()` lê tudo isso; o construtor aceita os mesmos
 valores como parâmetros nomeados.
+
+### Leiaute (NT 009)
+
+Existem hoje **dois XSDs "1.01"**. A NT SE/CGNFS-e 009 republicou o leiaute
+com `finNFSe` obrigatório no `infDPS`, `xDescServ` no fim de `cServ` e
+`vDedRed` trocado por `vAjusteBC`. Desde 20/10/2026 a **produção restrita**
+só aceita o novo (uma DPS no formato antigo leva E1235: *"invalid child
+element 'cLocEmi' ... expected: cMotivoEmisTI, finNFSe"*), enquanto a
+**produção** continua no anterior. A NT não diz quando a produção muda.
+
+A biblioteca traz os dois (`resources/xsd/1.01/` e `resources/xsd/1.01-nt009/`)
+e escolhe pelo enum `Leiaute`:
+
+| Ambiente | Padrão | |
+|---|---|---|
+| produção | `Leiaute::V101` (`1.01`) | sem `finNFSe` |
+| homologação | `Leiaute::V101Nt009` (`1.01-nt009`) | `finNFSe` = `0` (regular) se você não informar |
+
+O array do `infDPS` é o mesmo nos dois; a biblioteca ordena conforme o
+leiaute. Quando a produção adotar a NT 009 (o sinal é o mesmo E1235 em
+produção), defina `NFSE_LEIAUTE=nt009` (ou `leiauteDps: Leiaute::V101Nt009`)
+até atualizar a biblioteca para o padrão novo.
 
 ### Perfil de assinatura
 
@@ -290,12 +313,17 @@ vendor/bin/phpunit
 
 Os testes geram um certificado autoassinado em memória, validam o XML contra
 os XSDs oficiais e verificam a assinatura; não tocam a rede. A única
-alteração nos XSDs está documentada em `resources/xsd/1.01/ORIGEM.md`.
+alteração nos XSDs está documentada em `resources/xsd/1.01/ORIGEM.md`; a
+origem do pacote da NT 009 está em `resources/xsd/1.01-nt009/ORIGEM.md`.
+
+No Windows, o `openssl_pkey_new` dos testes precisa de um `openssl.cnf`:
+`OPENSSL_CONF=C:/php/extras/ssl/openssl.cnf vendor/bin/phpunit`.
 
 ## Referências
 
 - Documentação técnica oficial: https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica
 - Manual dos Contribuintes, APIs do Emissor Público Nacional (v1.2, out/2025)
 - Anexo I: Leiaute e Regras de Negócio DPS/NFS-e (v1.01, fev/2026)
-- Esquemas XSD v1.01 (fev/2026)
+- Esquemas XSD v1.01 (fev/2026) e de produção restrita (20/10/2026)
+- Nota Técnica SE/CGNFS-e 009 (v1.01): https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/rtc/nota-tecnica-009-se-cgnfs-e-v-1-01.pdf
 - Swagger de produção restrita: https://adn.producaorestrita.nfse.gov.br/contribuintes/docs/index.html (exige certificado)

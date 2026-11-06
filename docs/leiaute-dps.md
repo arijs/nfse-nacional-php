@@ -2,7 +2,8 @@
 
 Resumo dos campos que uma prestadora de serviços comum precisa. A referência
 completa é a planilha oficial *Anexo I — Leiaute e Regras de Negócio
-DPS/NFS-e* e os XSDs em `resources/xsd/1.01/`. Todo nome aqui é o nome do
+DPS/NFS-e* e os XSDs em `resources/xsd/1.01/` (produção) e
+`resources/xsd/1.01-nt009/` (produção restrita, NT 009). Todo nome aqui é o nome do
 elemento no XML, e é a chave que você usa no array passado para
 `Nfse::emitir()`.
 
@@ -17,6 +18,7 @@ elemento no XML, e é a chave que você usa no array passado para
 | `nDPS` | sim | 1 a 15 dígitos, sequencial por série | **nunca repita**: a Sefin recusa DPS duplicada. Guarde o último número no seu banco |
 | `dCompet` | sim | `AAAA-MM-DD` | data da prestação do serviço; não pode ser posterior a `dhEmi` (E0015) |
 | `tpEmit` | sim | `1` prestador, `2` tomador, `3` intermediário | padrão `1` |
+| `finNFSe` | só no leiaute NT 009 | `0` regular, `1` crédito, `2` débito | padrão `0` quando o leiaute é `1.01-nt009` (homologação, por padrão); **não existe** no `1.01` de produção — ver "Leiaute (NT 009)" no README |
 | `cLocEmi` | sim | código IBGE (7 dígitos) | município do prestador |
 
 O atributo `Id` do `infDPS` é calculado: `DPS` + `cLocEmi` + tipo de inscrição (1 CPF, 2 CNPJ) + inscrição com 14 posições + série com 5 + número com 15.
@@ -46,7 +48,7 @@ exterior: `NIF` ou `cNaoNIF`, e `end.endExt`.
 | `locPrest.cLocPrestacao` | sim | IBGE do local da prestação (ou `cPaisPrestacao` no exterior) |
 | `cServ.cTribNac` | sim | código de tributação nacional, 6 dígitos: item (2) + subitem (2) + desdobro (2). Ex.: 01.07 → `010700`, desdobro 01 → `010701`. Lista oficial: Anexo B |
 | `cServ.cTribMun` | condicional | código municipal, se o município exigir (consulte `parametros_municipais`) |
-| `cServ.xDescServ` | sim | discriminação, até 2000 caracteres |
+| `cServ.xDescServ` | sim | discriminação, até 2000 caracteres. No leiaute NT 009 vai para o fim de `cServ` (a biblioteca ordena) |
 | `cServ.cNBS` | não | Nomenclatura Brasileira de Serviços (9 dígitos) |
 | `infoCompl.xInfComp` | não | informações complementares, até 2000 |
 
@@ -85,4 +87,4 @@ biblioteca só garante ordem automática nos grupos listados em
 | E0714 / E0718 | assinatura inválida / não é do emitente | certificado do próprio prestador; tente o outro perfil de assinatura |
 | E1200..E1209 | certificado de transmissão inválido, vencido, revogado, sem CNPJ, não ICP-Brasil | troque o certificado |
 | E1225 / E1226 | Base64/GZIP inválidos | não acontece pela biblioteca |
-| E1235 | falha no esquema XML | valide localmente: `nfse validar dps.json` |
+| E1235 | falha no esquema XML | valide localmente: `nfse validar dps.json`. Se o complemento disser *"expected: cMotivoEmisTI, finNFSe"*, a Sefin está no leiaute da NT 009 e a configuração não: `NFSE_LEIAUTE=nt009` |

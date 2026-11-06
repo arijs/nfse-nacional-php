@@ -42,7 +42,24 @@ final class Configuracao
 		 * @var null|\Closure(PerfilAssinatura):void
 		 */
 		public readonly ?\Closure $aoDescobrirPerfil = null,
+		/**
+		 * Qual XSD a DPS segue. Null = o que a Sefin do ambiente aplica hoje
+		 * ({@see Leiaute::padraoPara}); informe para antecipar ou segurar a
+		 * troca. Use {@see leiaute()} para ler o efetivo.
+		 */
+		public readonly ?Leiaute $leiauteDps = null,
 	) {
+	}
+
+	/** O leiaute efetivo: o configurado, ou o padrão do ambiente. */
+	public function leiaute(): Leiaute
+	{
+		return $this->leiauteDps ?? Leiaute::padraoPara($this->ambiente);
+	}
+
+	public function comLeiaute(?Leiaute $leiaute): self
+	{
+		return $this->copiar(['leiauteDps' => $leiaute]);
 	}
 
 	public function comPerfil(PerfilAssinatura $perfil): self
@@ -87,6 +104,7 @@ final class Configuracao
 	 *   NFSE_URL_ADN             (opcional) URL base alternativa do ADN
 	 *   NFSE_TIMEOUT             (opcional) segundos
 	 *   NFSE_CA_BUNDLE           (opcional) caminho do CA bundle
+	 *   NFSE_LEIAUTE             (opcional) 1.01 | nt009 — padrão: o do ambiente (Leiaute::padraoPara)
 	 *
 	 * @param array<string,mixed>|null $env fonte alternativa (padrão: $_ENV + $_SERVER + getenv)
 	 */
@@ -125,6 +143,7 @@ final class Configuracao
 			timeoutSegundos: (int) ($ler('NFSE_TIMEOUT') ?: 60),
 			caBundle: $ler('NFSE_CA_BUNDLE') ?: null,
 			fallbackAssinatura: !\in_array(strtolower($ler('NFSE_FALLBACK_ASSINATURA')), ['0', 'false', 'nao', 'não', 'off'], true),
+			leiauteDps: '' === $ler('NFSE_LEIAUTE') ? null : Leiaute::de($ler('NFSE_LEIAUTE')),
 		);
 	}
 }

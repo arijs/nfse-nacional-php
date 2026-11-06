@@ -168,7 +168,7 @@ final class Nfse
 	{
 		$this->exigirCertificadoVigente();
 		if ($this->config->validarXsd) {
-			$this->xsd->validarOuLancar($pedRegEventoXml, 'pedRegEvento');
+			$this->xsd->validarOuLancar($pedRegEventoXml, 'pedRegEvento', $this->config->leiaute());
 		}
 
 		return $this->assinar($pedRegEventoXml, 'infPedReg', 'pedRegEvento', $perfil);
@@ -182,9 +182,9 @@ final class Nfse
 	private function montarDps(array $infDps): string
 	{
 		$this->exigirCertificadoVigente();
-		$xml = DpsXml::gerar($this->completar($infDps));
+		$xml = DpsXml::gerar($this->completar($infDps), $this->config->leiaute());
 		if ($this->config->validarXsd) {
-			$this->xsd->validarOuLancar($xml, 'DPS');
+			$this->xsd->validarOuLancar($xml, 'DPS', $this->config->leiaute());
 		}
 
 		return $xml;
@@ -194,7 +194,7 @@ final class Nfse
 	{
 		$assinado = (new AssinadorXml($this->config->certificado, $perfil ?? $this->perfilAtivo))->assinar($xmlSemAssinatura, $tagAlvo);
 		if ($this->config->validarXsd) {
-			$this->xsd->validarOuLancar($assinado, $esquema);
+			$this->xsd->validarOuLancar($assinado, $esquema, $this->config->leiaute());
 		}
 
 		return $assinado;
@@ -241,6 +241,9 @@ final class Nfse
 		$infDps['dhEmi'] ??= $agora;
 		$infDps['dCompet'] ??= $infDps['dhEmi'] instanceof \DateTimeInterface ? $infDps['dhEmi'] : $agora;
 		$infDps['tpEmit'] ??= '1';
+		if ($this->config->leiaute()->exigeFinNfse()) {
+			$infDps['finNFSe'] ??= '0'; // NFS-e regular; 1 crédito e 2 débito são as notas de ajuste
+		}
 		if (\is_array($infDps['prest'] ?? null) && !isset($infDps['prest']['CNPJ']) && !isset($infDps['prest']['CPF'])) {
 			$insc = $this->config->certificado->cnpjOuCpf();
 			if (null !== $insc) {

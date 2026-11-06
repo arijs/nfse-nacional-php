@@ -3,6 +3,7 @@
 namespace Arijs\NfseNacional\Dps;
 
 use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Leiaute;
 use Arijs\NfseNacional\Util\Formato;
 
 /**
@@ -31,12 +32,13 @@ final class DpsXml
 
 	/**
 	 * Ordem dos filhos de cada grupo, extraída dos xs:sequence de
-	 * tiposComplexos_v1.01.xsd. Chaveada pelo caminho a partir de infDPS para
-	 * não confundir grupos homônimos (ex.: `valores` da DPS × `valores` do
-	 * IBSCBS). Elementos ausentes daqui mantêm a ordem em que foram passados.
+	 * tiposComplexos_v1.01.xsd (leiaute {@see Leiaute::V101}). Chaveada pelo
+	 * caminho a partir de infDPS para não confundir grupos homônimos (ex.:
+	 * `valores` da DPS × `valores` do IBSCBS). Elementos ausentes daqui mantêm
+	 * a ordem em que foram passados.
 	 */
 	private const ORDEM = [
-		'infDPS' => ['tpAmb', 'dhEmi', 'verAplic', 'serie', 'nDPS', 'dCompet', 'tpEmit', 'cLocEmi', 'subst', 'prest', 'toma', 'interm', 'serv', 'valores', 'IBSCBS'],
+		'infDPS' => ['tpAmb', 'dhEmi', 'verAplic', 'serie', 'nDPS', 'dCompet', 'tpEmit', 'cMotivoEmisTI', 'chNFSeRej', 'cLocEmi', 'subst', 'prest', 'toma', 'interm', 'serv', 'valores', 'IBSCBS'],
 		'infDPS/subst' => ['chSubstda', 'cMotivo', 'xMotivo'],
 		'infDPS/prest' => ['CNPJ', 'CPF', 'NIF', 'cNaoNIF', 'CAEPF', 'IM', 'xNome', 'end', 'fone', 'email', 'regTrib'],
 		'infDPS/prest/regTrib' => ['opSimpNac', 'regApTribSN', 'regEspTrib'],
@@ -80,16 +82,37 @@ final class DpsXml
 		'infDPS/valores/trib/totTrib/pTotTrib' => ['pTotTribFed', 'pTotTribEst', 'pTotTribMun'],
 	];
 
+	/**
+	 * O que o leiaute da NT 009 ({@see Leiaute::V101Nt009}) muda em
+	 * {@see ORDEM}; o resto é igual. Extraído de
+	 * resources/xsd/1.01-nt009/tiposComplexos_v1.01.xsd.
+	 */
+	private const ORDEM_NT009 = [
+		'infDPS' => ['tpAmb', 'dhEmi', 'verAplic', 'serie', 'nDPS', 'dCompet', 'tpEmit', 'cMotivoEmisTI', 'finNFSe', 'chNFSeRej', 'cLocEmi', 'subst', 'prest', 'toma', 'interm', 'serv', 'valores', 'IBSCBS'],
+		'infDPS/serv/cServ' => ['cTribNac', 'cTribMun', 'cNBS', 'cIntContrib', 'xDescServ'],
+		'infDPS/valores' => ['vServPrest', 'vDescCondIncond', 'vAjusteBC', 'trib'],
+		'infDPS/valores/vAjusteBC' => ['pAjusteBCISSQN', 'vAjusteBCISSQN', 'documentos'],
+		'infDPS/valores/vAjusteBC/documentos' => ['docAjusteBC'],
+		'infDPS/valores/vAjusteBC/documentos/docAjusteBC' => ['tpAjusteBC', 'xTpAjusteBC', 'vTotDoc', 'vAjusteAplic', 'dtEmiDoc', 'dtCompDoc', 'dFeNacional', 'docFiscalOutro', 'docOutro', 'fornec'],
+		'infDPS/valores/vDedRed' => null,
+		'infDPS/valores/vDedRed/documentos' => null,
+		'infDPS/valores/vDedRed/documentos/docDedRed' => null,
+	];
+
 	/** Campos decimais com 2 casas — floats passados aqui viram "123.45". */
-	private const DECIMAIS = ['vReceb', 'vServ', 'vDescIncond', 'vDescCond', 'vDR', 'vDedutivelRedutivel', 'vDeducaoReducao', 'vRedBCBM', 'vRetCP', 'vRetIRRF', 'vRetCSLL', 'vBCPisCofins', 'vPis', 'vCofins', 'vTotTribFed', 'vTotTribEst', 'vTotTribMun', 'vServMoeda', 'pDR', 'pRedBCBM', 'pAliq', 'pAliqPis', 'pAliqCofins', 'pTotTribFed', 'pTotTribEst', 'pTotTribMun', 'pTotTribSN', 'vBC', 'vCalcReeRepRes', 'vlrReeRepRes', 'pIBSUF', 'pRedAliqUF', 'pAliqEfetUF', 'pIBSMun', 'pRedAliqMun', 'pAliqEfetMun', 'pCBS', 'pRedAliqCBS', 'pAliqEfetCBS', 'pRedutor', 'pAliqEfeRegIBSUF', 'pAliqEfeRegIBSMun', 'pAliqEfeRegCBS', 'vTribRegIBSUF', 'vTribRegIBSMun', 'vTribRegCBS', 'pCredPres', 'pCredPresIBS', 'pCredPresCBS', 'vCredPresIBS', 'vCredPresCBS'];
+	private const DECIMAIS = ['pAjusteBCISSQN', 'vAjusteBCISSQN', 'vTotDoc', 'vAjusteAplic', 'vCalcAjusteBCIBSCBS', 'vCalcAjusteBCLocImoveis', 'vReceb','vServ', 'vDescIncond', 'vDescCond', 'vDR', 'vDedutivelRedutivel', 'vDeducaoReducao', 'vRedBCBM', 'vRetCP', 'vRetIRRF', 'vRetCSLL', 'vBCPisCofins', 'vPis', 'vCofins', 'vTotTribFed', 'vTotTribEst', 'vTotTribMun', 'vServMoeda', 'pDR', 'pRedBCBM', 'pAliq', 'pAliqPis', 'pAliqCofins', 'pTotTribFed', 'pTotTribEst', 'pTotTribMun', 'pTotTribSN', 'vBC', 'vCalcReeRepRes', 'vlrReeRepRes', 'pIBSUF', 'pRedAliqUF', 'pAliqEfetUF', 'pIBSMun', 'pRedAliqMun', 'pAliqEfetMun', 'pCBS', 'pRedAliqCBS', 'pAliqEfetCBS', 'pRedutor', 'pAliqEfeRegIBSUF', 'pAliqEfeRegIBSMun', 'pAliqEfeRegCBS', 'vTribRegIBSUF', 'vTribRegIBSMun', 'vTribRegCBS', 'pCredPres', 'pCredPresIBS', 'pCredPresCBS', 'vCredPresIBS', 'vCredPresCBS'];
 
 	/**
 	 * @param Grupo $infDps conteúdo do grupo infDPS (sem o Id — ele é calculado)
+	 * @param string|Leiaute $leiaute qual XSD seguir na ordem dos elementos; string = valor do Leiaute ('1.01', '1.01-nt009')
 	 *
 	 * @return string XML sem assinatura, com declaração UTF-8
 	 */
-	public static function gerar(array $infDps, string $versao = self::VERSAO_LEIAUTE): string
+	public static function gerar(array $infDps, string|Leiaute $leiaute = Leiaute::V101): string
 	{
+		$leiaute = Leiaute::de($leiaute);
+		$ordem = self::ordemDo($leiaute);
+		$versao = $leiaute->versaoXml();
 		$infDps = self::normalizar($infDps);
 		$id = $infDps['@Id'] ?? self::idDps(
 			(string) ($infDps['cLocEmi'] ?? ''),
@@ -111,7 +134,7 @@ final class DpsXml
 		$inf->setAttribute('Id', $id);
 		$dps->appendChild($inf);
 
-		self::preencher($dom, $inf, $infDps, 'infDPS');
+		self::preencher($dom, $inf, $infDps, 'infDPS', $ordem);
 
 		$xml = $dom->saveXML();
 		if (false === $xml) {
@@ -188,10 +211,23 @@ final class DpsXml
 		return $infDps;
 	}
 
-	/** @param Grupo $dados */
-	private static function preencher(\DOMDocument $dom, \DOMElement $pai, array $dados, string $caminho): void
+	/** @return array<string,list<string>> */
+	private static function ordemDo(Leiaute $leiaute): array
 	{
-		foreach (self::ordenar($dados, $caminho) as $nome => $valor) {
+		if (Leiaute::V101 === $leiaute) {
+			return self::ORDEM;
+		}
+
+		return array_filter(array_merge(self::ORDEM, self::ORDEM_NT009), static fn(?array $o): bool => null !== $o);
+	}
+
+	/**
+	 * @param Grupo $dados
+	 * @param array<string,list<string>> $ordem
+	 */
+	private static function preencher(\DOMDocument $dom, \DOMElement $pai, array $dados, string $caminho, array $ordem): void
+	{
+		foreach (self::ordenar($dados, $ordem[$caminho] ?? null) as $nome => $valor) {
 			if (null === $valor) {
 				continue;
 			}
@@ -202,15 +238,16 @@ final class DpsXml
 			$nome = (string) $nome;
 			if (\is_array($valor) && array_is_list($valor)) {
 				foreach ($valor as $item) {
-					self::anexar($dom, $pai, $nome, $item, $caminho);
+					self::anexar($dom, $pai, $nome, $item, $caminho, $ordem);
 				}
 				continue;
 			}
-			self::anexar($dom, $pai, $nome, $valor, $caminho);
+			self::anexar($dom, $pai, $nome, $valor, $caminho, $ordem);
 		}
 	}
 
-	private static function anexar(\DOMDocument $dom, \DOMElement $pai, string $nome, mixed $valor, string $caminho): void
+	/** @param array<string,list<string>> $ordem */
+	private static function anexar(\DOMDocument $dom, \DOMElement $pai, string $nome, mixed $valor, string $caminho, array $ordem): void
 	{
 		$el = $dom->createElementNS(self::NAMESPACE, $nome);
 		$pai->appendChild($el);
@@ -218,7 +255,7 @@ final class DpsXml
 			if (array_is_list($valor)) {
 				throw new DadosExcecao("Lista dentro de lista em {$caminho}/{$nome}: use um array associativo por item.");
 			}
-			self::preencher($dom, $el, $valor, $caminho.'/'.$nome);
+			self::preencher($dom, $el, $valor, $caminho.'/'.$nome, $ordem);
 
 			return;
 		}
@@ -250,12 +287,12 @@ final class DpsXml
 
 	/**
 	 * @param Grupo $dados
+	 * @param list<string>|null $ordem
 	 *
 	 * @return Grupo
 	 */
-	private static function ordenar(array $dados, string $caminho): array
+	private static function ordenar(array $dados, ?array $ordem): array
 	{
-		$ordem = self::ORDEM[$caminho] ?? null;
 		if (null === $ordem) {
 			return $dados;
 		}

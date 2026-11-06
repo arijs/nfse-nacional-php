@@ -23,7 +23,8 @@
  *
  * Configuração por variáveis de ambiente (ou --env=arquivo.env):
  *   NFSE_AMBIENTE=2  NFSE_CERT_PFX=/caminho/cert.pfx  NFSE_CERT_SENHA=...
- *   NFSE_VERSAO_APLICATIVO, NFSE_PERFIL_ASSINATURA (sha1|sha256), NFSE_URL_SEFIN
+ *   NFSE_VERSAO_APLICATIVO, NFSE_PERFIL_ASSINATURA (sha1|sha256), NFSE_URL_SEFIN,
+ *   NFSE_LEIAUTE (1.01|nt009; padrão: o que a Sefin do ambiente aplica)
  */
 
 use Arijs\NfseNacional\Configuracao;
@@ -57,7 +58,7 @@ try {
 	switch ($comando) {
 		case 'cert':
 			$cfg = config($env);
-			saida($cfg->certificado->resumo() + ['ambiente' => $cfg->ambiente->nome(), 'perfil_assinatura' => $cfg->perfilAssinatura->value]);
+			saida($cfg->certificado->resumo() + ['ambiente' => $cfg->ambiente->nome(), 'leiaute' => $cfg->leiaute()->value, 'perfil_assinatura' => $cfg->perfilAssinatura->value]);
 			break;
 
 		case 'validar':

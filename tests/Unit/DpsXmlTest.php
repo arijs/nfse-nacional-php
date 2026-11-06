@@ -5,6 +5,7 @@ namespace Arijs\NfseNacional\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use Arijs\NfseNacional\Dps\DpsXml;
 use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Leiaute;
 use Arijs\NfseNacional\Tests\Support\DpsExemplo;
 use Arijs\NfseNacional\Xsd\ValidadorXsd;
 
@@ -95,6 +96,39 @@ final class DpsXmlTest extends TestCase
 
 		self::assertNotSame([], $erros);
 		self::assertStringContainsString('CNPJ', implode("\n", $erros));
+	}
+
+	public function testOMesmoArrayValeNosDoisLeiautes(): void
+	{
+		$inf = DpsExemplo::infDps();
+		$inf['serv']['cServ']['cNBS'] = '115100000';
+		$atual = DpsXml::gerar($inf);
+		$nt009 = DpsXml::gerar(['finNFSe' => '0'] + $inf, Leiaute::V101Nt009);
+
+		self::assertSame([], (new ValidadorXsd())->validar($atual, 'DPS', Leiaute::V101));
+		self::assertSame([], (new ValidadorXsd())->validar($nt009, 'DPS', Leiaute::V101Nt009));
+		self::assertStringContainsString('versao="1.01"', $nt009);
+		// cada um recusa o outro: os dois conjuntos de XSD são de fato diferentes
+		self::assertNotSame([], (new ValidadorXsd())->validar($atual, 'DPS', Leiaute::V101Nt009));
+		self::assertNotSame([], (new ValidadorXsd())->validar($nt009, 'DPS', Leiaute::V101));
+		self::assertSame(DpsXml::gerar($inf, '1.01'), $atual);
+	}
+
+	public function testAjusteDeBaseDeCalculoNoLeiauteNt009(): void
+	{
+		$inf = ['finNFSe' => '0'] + DpsExemplo::infDps();
+		$inf['valores']['vAjusteBC'] = ['pAjusteBCISSQN' => 10.0];
+
+		$xml = DpsXml::gerar($inf, Leiaute::V101Nt009);
+
+		self::assertMatchesRegularExpression('#</vServPrest><vAjusteBC><pAjusteBCISSQN>10.00</pAjusteBCISSQN></vAjusteBC><trib>#', $xml);
+		self::assertSame([], (new ValidadorXsd())->validar($xml, 'DPS', Leiaute::V101Nt009));
+	}
+
+	public function testLeiauteDesconhecidoERecusado(): void
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		DpsXml::gerar(DpsExemplo::infDps(), '2.00');
 	}
 
 	public function testEscapaCaracteresEspeciais(): void

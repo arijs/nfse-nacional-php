@@ -10,6 +10,7 @@ use Arijs\NfseNacional\Evento\PedidoRegistroEventoXml;
 use Arijs\NfseNacional\Excecao\CertificadoExcecao;
 use Arijs\NfseNacional\Excecao\DadosExcecao;
 use Arijs\NfseNacional\Excecao\XsdExcecao;
+use Arijs\NfseNacional\Leiaute;
 use Arijs\NfseNacional\Nfse;
 use Arijs\NfseNacional\Tests\Support\CertificadoTeste;
 use Arijs\NfseNacional\Tests\Support\ClienteHttpFalso;
@@ -42,7 +43,70 @@ final class NfseTest extends TestCase
 		self::assertStringContainsString('<prest><CNPJ>'.CertificadoTeste::CNPJ.'</CNPJ>', $xml);
 		self::assertMatchesRegularExpression('#<dhEmi>\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d-03:00</dhEmi>#', $xml);
 		self::assertTrue(AssinadorXml::verificar($xml)['valida']);
-		self::assertSame([], (new ValidadorXsd())->validar($xml, 'DPS'));
+		// Homologação = leiaute da NT 009: finNFSe preenchido como "regular".
+		self::assertStringContainsString('<tpEmit>1</tpEmit><finNFSe>0</finNFSe><cLocEmi>', $xml);
+		self::assertSame([], (new ValidadorXsd())->validar($xml, 'DPS', Leiaute::V101Nt009));
+	}
+
+	public function testProducaoSegueOLeiauteAtualSemFinNfse(): void
+	{
+		$http = (new ClienteHttpFalso())->responder(201, ['chaveAcesso' => self::CHAVE]);
+		$inf = DpsExemplo::infDps();
+		$inf['tpAmb'] = '1';
+		$inf['serv']['cServ']['cNBS'] = '115100000';
+
+		$this->nfse($http, Ambiente::Producao)->emitir($inf);
+
+		$xml = Gzip::descomprimirBase64($http->ultimoJson()['dpsXmlGZipB64']);
+		self::assertStringNotContainsString('finNFSe', $xml);
+		self::assertLessThan(strpos($xml, '<cNBS>'), strpos($xml, '<xDescServ>'));
+		self::assertSame([], (new ValidadorXsd())->validar($xml, 'DPS', Leiaute::V101));
+	}
+
+	public function testLeiauteNt009PoeXDescServNoFimDoCServ(): void
+	{
+		$http = (new ClienteHttpFalso())->responder(201, ['chaveAcesso' => self::CHAVE]);
+		$inf = DpsExemplo::infDps();
+		$inf['serv']['cServ']['cTribMun'] = '001';
+		$inf['serv']['cServ']['cNBS'] = '115100000';
+
+		$this->nfse($http)->emitir($inf);
+
+		$xml = Gzip::descomprimirBase64($http->ultimoJson()['dpsXmlGZipB64']);
+		self::assertMatchesRegularExpression('#<cServ><cTribNac>010701</cTribNac><cTribMun>001</cTribMun><cNBS>115100000</cNBS><xDescServ>[^<]+</xDescServ></cServ>#', $xml);
+		self::assertSame([], (new ValidadorXsd())->validar($xml, 'DPS', Leiaute::V101Nt009));
+	}
+
+	public function testLeiauteConfiguradoVenceOPadraoDoAmbiente(): void
+	{
+		$http = (new ClienteHttpFalso())->responder(201, ['chaveAcesso' => self::CHAVE]);
+		$cfg = new Configuracao(Ambiente::Producao, CertificadoTeste::certificado(), 'x', leiauteDps: Leiaute::V101Nt009);
+		$inf = DpsExemplo::infDps();
+		$inf['tpAmb'] = '1';
+		$inf['finNFSe'] = '0';
+
+		(new Nfse($cfg, $http))->emitir($inf);
+
+		$xml = Gzip::descomprimirBase64($http->ultimoJson()['dpsXmlGZipB64']);
+		self::assertStringContainsString('<finNFSe>0</finNFSe>', $xml);
+		self::assertSame(Leiaute::V101, (new Configuracao(Ambiente::Producao, CertificadoTeste::certificado()))->leiaute());
+		self::assertSame(Leiaute::V101Nt009, (new Configuracao(Ambiente::Homologacao, CertificadoTeste::certificado()))->leiaute());
+		self::assertSame(Leiaute::V101, $cfg->comLeiaute(null)->leiaute());
+	}
+
+	public function testFinNfseNoLeiauteAtualNaoSaiDeCasa(): void
+	{
+		$http = new ClienteHttpFalso();
+		$inf = DpsExemplo::infDps();
+		$inf['tpAmb'] = '1';
+		$inf['finNFSe'] = '0';
+
+		$this->expectException(XsdExcecao::class);
+		try {
+			$this->nfse($http, Ambiente::Producao)->emitir($inf);
+		} finally {
+			self::assertSame([], $http->chamadas);
+		}
 	}
 
 	public function testAmbienteDivergenteNaoSaiDeCasa(): void
