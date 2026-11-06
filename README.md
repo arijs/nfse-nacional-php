@@ -148,6 +148,7 @@ gera buraco na sequência, o que é permitido mas convém registrar.
 ```bash
 cp .env.exemplo .env            # NFSE_AMBIENTE, NFSE_CERT_PFX, NFSE_CERT_SENHA
 vendor/bin/nfse cert --env=.env                        # dados do certificado
+vendor/bin/nfse perfil examples/dps-exemplo.json --env=.env    # qual perfil de assinatura a Sefin aceita (homologação)
 vendor/bin/nfse validar examples/dps-exemplo.json --env=.env   # XML assinado, sem enviar
 vendor/bin/nfse emitir  examples/dps-exemplo.json ./saida --env=.env
 vendor/bin/nfse consultar <chave> ./saida --env=.env
@@ -164,6 +165,7 @@ Sem `--env`, as variáveis são lidas do ambiente do processo.
 | `NFSE_CERT_PFX` + `NFSE_CERT_SENHA` | certificado A1 (ou `NFSE_CERT_PEM` + `NFSE_CHAVE_PEM`) |
 | `NFSE_VERSAO_APLICATIVO` | texto do `verAplic` (até 20 caracteres) |
 | `NFSE_PERFIL_ASSINATURA` | `sha1` (padrão) ou `sha256`, ver abaixo |
+| `NFSE_FALLBACK_ASSINATURA` | `0` desliga a nova tentativa com o outro perfil após E0714 |
 | `NFSE_URL_SEFIN` | URL base alternativa (proxy, mock) |
 | `NFSE_TIMEOUT`, `NFSE_CA_BUNDLE` | timeout em segundos; CA bundle se o sistema não tiver |
 
@@ -176,17 +178,35 @@ O "Padrão de Assinatura Digital" dos manuais de integração da NFS-e descreve
 C14N inclusiva + RSA-SHA1 (mesmo perfil da NF-e); é o padrão aqui. A própria
 Sefin assina as NFS-e que devolve com C14N exclusiva + RSA-SHA256, e muitas
 integrações enviam a DPS assim sem rejeição. A Sefin valida pelos algoritmos
-declarados no XML, então os dois são aceitos. Se um dia a DPS for rejeitada
-com E0714 sem motivo aparente, troque `NFSE_PERFIL_ASSINATURA` antes de
-qualquer outra coisa.
+declarados no XML, então os dois são aceitos.
+
+Duas redes de segurança cuidam disso por você:
+
+- **Descoberta na implantação**: `vendor/bin/nfse perfil dps.json --env=.env`
+  emite, em homologação, uma DPS de teste com cada perfil (números `nDPS` e
+  `nDPS+1`) e imprime qual a Sefin aceitou, já no formato
+  `NFSE_PERFIL_ASSINATURA=...`. Grave isso no `.env` e produção começa certa.
+  O comando se recusa a rodar em produção.
+- **Fallback automático** (`fallbackAssinatura`, ligado por padrão): se a
+  Sefin recusar com E0714, a mesma DPS é assinada com o outro perfil e
+  reenviada uma vez. Uma DPS recusada não gera nota, então o reenvio com o
+  mesmo número é seguro. Só o E0714 dispara isso; E0715, E0716 e E0718 são
+  problemas do certificado. O perfil que funcionou passa a ser usado pela
+  instância, e o callback `aoDescobrirPerfil` recebe o valor para você
+  persistir. Desligue com `NFSE_FALLBACK_ASSINATURA=0`.
+
+Um timeout depois do envio não dispara fallback nem reenvio: nesse caso não
+se sabe se a nota saiu, e o caminho é `dpsProcessada()` antes de qualquer
+nova tentativa.
 
 ## Roteiro para colocar em produção
 
 1. **Certificado**: compre o e-CNPJ A1, exporte o `.pfx` com senha, guarde-o
    fora da raiz web com permissão só para o usuário do PHP. Nunca versione.
-2. **Produção restrita**: `NFSE_AMBIENTE=2`, rode `nfse cert` e depois
-   `nfse emitir` com um JSON real da sua empresa. Ajuste até a resposta vir
-   com `chaveAcesso`. As notas de lá não valem.
+2. **Produção restrita**: `NFSE_AMBIENTE=2`, rode `nfse cert`, depois
+   `nfse perfil` com um JSON real da sua empresa (grave o
+   `NFSE_PERFIL_ASSINATURA` que ele indicar) e por fim `nfse emitir`. Ajuste
+   até a resposta vir com `chaveAcesso`. As notas de lá não valem.
 3. **Numeração**: crie no seu banco o contador de `nDPS` por série, com
    incremento atômico, e grave a DPS assinada + resposta de cada envio.
 4. **Produção**: `NFSE_AMBIENTE=1`. Emita uma nota de valor baixo para você

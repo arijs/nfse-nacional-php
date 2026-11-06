@@ -26,7 +26,42 @@ final class Configuracao
 		public readonly ?string $caBundle = null,
 		/** Fonte de "agora" (dhEmi, dhEvento, vigência do certificado). Padrão: relógio do sistema em America/Sao_Paulo. */
 		public readonly ?\Closure $relogio = null,
+		/**
+		 * Se a Sefin recusar a assinatura (E0714), assinar de novo com o outro
+		 * perfil e reenviar — uma vez. O perfil que funcionou passa a ser usado
+		 * nas chamadas seguintes desta instância de {@see Nfse}.
+		 */
+		public readonly bool $fallbackAssinatura = true,
+		/**
+		 * Chamado com o {@see PerfilAssinatura} que funcionou quando o fallback
+		 * entra em ação — grave-o (NFSE_PERFIL_ASSINATURA) para as próximas
+		 * execuções já começarem certas.
+		 *
+		 * @var null|\Closure(PerfilAssinatura):void
+		 */
+		public readonly ?\Closure $aoDescobrirPerfil = null,
 	) {
+	}
+
+	public function comPerfil(PerfilAssinatura $perfil): self
+	{
+		return $this->copiar(['perfilAssinatura' => $perfil]);
+	}
+
+	public function comFallbackAssinatura(bool $ligado): self
+	{
+		return $this->copiar(['fallbackAssinatura' => $ligado]);
+	}
+
+	/** @param array<string,mixed> $alteracoes */
+	private function copiar(array $alteracoes): self
+	{
+		$args = [];
+		foreach ((new \ReflectionClass(self::class))->getConstructor()?->getParameters() ?? [] as $p) {
+			$args[$p->getName()] = \array_key_exists($p->getName(), $alteracoes) ? $alteracoes[$p->getName()] : $this->{$p->getName()};
+		}
+
+		return new self(...$args);
 	}
 
 	public function agora(): \DateTimeImmutable
@@ -45,6 +80,7 @@ final class Configuracao
 	 *   NFSE_CERT_SENHA          senha do .pfx / da chave
 	 *   NFSE_VERSAO_APLICATIVO   (opcional) texto do verAplic
 	 *   NFSE_PERFIL_ASSINATURA   (opcional) sha1 | sha256
+	 *   NFSE_FALLBACK_ASSINATURA (opcional) 0 desliga a tentativa com o outro perfil
 	 *   NFSE_URL_SEFIN           (opcional) URL base alternativa
 	 *   NFSE_TIMEOUT             (opcional) segundos
 	 *   NFSE_CA_BUNDLE           (opcional) caminho do CA bundle
@@ -84,6 +120,7 @@ final class Configuracao
 			urlSefin: $ler('NFSE_URL_SEFIN') ?: null,
 			timeoutSegundos: (int) ($ler('NFSE_TIMEOUT') ?: 60),
 			caBundle: $ler('NFSE_CA_BUNDLE') ?: null,
+			fallbackAssinatura: !\in_array(strtolower($ler('NFSE_FALLBACK_ASSINATURA')), ['0', 'false', 'nao', 'não', 'off'], true),
 		);
 	}
 }

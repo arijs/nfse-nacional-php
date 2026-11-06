@@ -13,6 +13,8 @@
  *   nfse cancelar <chave> <motivo> "<justificativa>"   motivo: 1 erro, 2 não prestado, 9 outros
  *   nfse eventos  <chave>
  *   nfse convenio <codMunicipio>     parâmetros do convênio do município
+ *   nfse perfil   dps.json           (só homologação) emite uma DPS de teste com cada
+ *                                    perfil de assinatura e diz qual a Sefin aceita
  *
  * Configuração por variáveis de ambiente (ou --env=arquivo.env):
  *   NFSE_AMBIENTE=2  NFSE_CERT_PFX=/caminho/cert.pfx  NFSE_CERT_SENHA=...
@@ -20,6 +22,7 @@
  */
 
 use Arijs\NfseNacional\Configuracao;
+use Arijs\NfseNacional\DescobertaPerfil;
 use Arijs\NfseNacional\Excecao\NfseExcecao;
 use Arijs\NfseNacional\Excecao\SefinExcecao;
 use Arijs\NfseNacional\Nfse;
@@ -94,6 +97,30 @@ try {
 			$r = (new Nfse(config($env)))->sefin()->consultarEventos(exigir($args[1] ?? null, 'chave de acesso'));
 			saida($r->paraArray() + ['xmls_conteudo' => $r->xmls()]);
 			$r->exigirSucesso();
+			break;
+
+		case 'perfil':
+			$cfg = config($env);
+			$resultados = (new DescobertaPerfil($cfg))->executar(lerDps($args[1] ?? null));
+			$rec = DescobertaPerfil::recomendacao($resultados);
+			saida([
+				'tentativas' => array_map(static fn(array $r) => [
+					'perfil' => $r['perfil']->value,
+					'nDPS' => $r['nDPS'],
+					'aceito' => $r['aceito'],
+					'status' => $r['resposta']->status,
+					'resumo' => $r['aceito'] ? 'aceito' : $r['resposta']->resumoErros(),
+					'assinatura_recusada' => $r['assinatura_recusada'],
+					'chaveAcesso' => $r['resposta']->chaveAcesso(),
+					'erros' => array_map('strval', $r['resposta']->erros()),
+				], $resultados),
+				'recomendacao' => $rec?->value,
+				'env' => null !== $rec ? 'NFSE_PERFIL_ASSINATURA='.$rec->value : null,
+			]);
+			if (null === $rec) {
+				fwrite(\STDERR, "Nenhum perfil foi aceito e os dois caíram em erro de assinatura (ou em erros diferentes). Veja os erros acima.\n");
+				exit(2);
+			}
 			break;
 
 		case 'convenio':

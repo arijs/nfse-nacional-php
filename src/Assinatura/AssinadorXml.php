@@ -166,6 +166,21 @@ final class AssinadorXml
 			: ['valida' => false, 'motivo' => 'SignatureValue não confere.', 'perfil' => $perfil];
 	}
 
+	/** Devolve o XML sem o `<Signature>` (para assinar de novo com outro perfil). */
+	public static function semAssinatura(string $xml): string
+	{
+		$dom = self::carregar($xml);
+		foreach (iterator_to_array($dom->getElementsByTagNameNS(self::NS_DSIG, 'Signature')) as $sig) {
+			$sig->parentNode?->removeChild($sig);
+		}
+		$saida = $dom->saveXML();
+		if (false === $saida) {
+			throw new AssinaturaExcecao('Falha ao serializar o XML.');
+		}
+
+		return $saida;
+	}
+
 	private static function carregar(string $xml): \DOMDocument
 	{
 		$dom = new \DOMDocument('1.0', 'UTF-8');

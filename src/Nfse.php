@@ -3,6 +3,7 @@
 namespace Arijs\NfseNacional;
 
 use Arijs\NfseNacional\Assinatura\AssinadorXml;
+use Arijs\NfseNacional\Assinatura\PerfilAssinatura;
 use Arijs\NfseNacional\Dps\DpsXml;
 use Arijs\NfseNacional\Evento\PedidoRegistroEventoXml;
 use Arijs\NfseNacional\Excecao\CertificadoExcecao;
@@ -22,12 +23,23 @@ use Arijs\NfseNacional\Xsd\ValidadorXsd;
  *
  * Cada etapa também existe separada ({@see prepararDps}) para quem quer
  * guardar o XML assinado antes de enviar ou reenviar um XML já pronto.
+ *
+ * Fallback de assinatura: se a Sefin responder E0714 ("erro na assinatura")
+ * e {@see Configuracao::$fallbackAssinatura} estiver ligado, o mesmo XML é
+ * assinado com o outro {@see PerfilAssinatura} e reenviado uma vez. Uma DPS
+ * recusada não gera NFS-e, então o reenvio com o mesmo número é seguro. Só
+ * o E0714 dispara isso: E0715/E0716/E0718 são defeitos do certificado, e um
+ * silêncio (timeout) é {@see \Arijs\NfseNacional\Excecao\TransporteExcecao},
+ * onde reenviar às cegas seria errado — use {@see SefinNacional::dpsProcessada}.
  */
 final class Nfse
 {
+	/** Código da Sefin para assinatura inválida na DPS e nos eventos. */
+	public const ERRO_ASSINATURA = 'E0714';
+
 	private readonly SefinNacional $sefin;
-	private readonly AssinadorXml $assinador;
 	private readonly ValidadorXsd $xsd;
+	private PerfilAssinatura $perfilAtivo;
 
 	public function __construct(
 		private readonly Configuracao $config,
@@ -35,8 +47,8 @@ final class Nfse
 	) {
 		$http ??= new ClienteHttpCurl($config->certificado, $config->timeoutSegundos, 10, $config->caBundle);
 		$this->sefin = new SefinNacional($config->ambiente, $http, $config->urlSefin);
-		$this->assinador = new AssinadorXml($config->certificado, $config->perfilAssinatura);
 		$this->xsd = new ValidadorXsd();
+		$this->perfilAtivo = $config->perfilAssinatura;
 	}
 
 	public function sefin(): SefinNacional
@@ -49,6 +61,12 @@ final class Nfse
 		return $this->config;
 	}
 
+	/** Perfil em uso: o configurado, ou o que o fallback descobriu funcionar. */
+	public function perfilAtivo(): PerfilAssinatura
+	{
+		return $this->perfilAtivo;
+	}
+
 	/**
 	 * Monta, valida e assina a DPS — sem enviar.
 	 *
@@ -59,22 +77,11 @@ final class Nfse
 	 *
 	 * @param array<string,mixed> $infDps
 	 *
-	 * @return string XML assinado, pronto para {@see enviarXml}
+	 * @return string XML assinado, pronto para {@see emitir}
 	 */
-	public function prepararDps(array $infDps): string
+	public function prepararDps(array $infDps, ?PerfilAssinatura $perfil = null): string
 	{
-		$this->exigirCertificadoVigente();
-		$infDps = $this->completar($infDps);
-		$xml = DpsXml::gerar($infDps);
-		if ($this->config->validarXsd) {
-			$this->xsd->validarOuLancar($xml, 'DPS');
-		}
-		$assinado = $this->assinador->assinar($xml, 'infDPS');
-		if ($this->config->validarXsd) {
-			$this->xsd->validarOuLancar($assinado, 'DPS');
-		}
-
-		return $assinado;
+		return $this->assinar($this->montarDps($infDps), 'infDPS', 'DPS', $perfil);
 	}
 
 	/**
@@ -84,7 +91,7 @@ final class Nfse
 	{
 		$xml = \is_array($dps) ? $this->prepararDps($dps) : $dps;
 
-		return $this->sefin->enviarDps($xml);
+		return $this->enviarComFallback($xml, 'infDPS', 'DPS', fn(string $x) => $this->sefin->enviarDps($x));
 	}
 
 	public function consultar(string $chaveAcesso): RespostaSefin
@@ -110,18 +117,69 @@ final class Nfse
 			$this->config->agora(),
 		));
 
-		return $this->sefin->registrarEvento($chaveAcesso, $xml);
+		return $this->enviarComFallback($xml, 'infPedReg', 'pedRegEvento', fn(string $x) => $this->sefin->registrarEvento($chaveAcesso, $x));
 	}
 
 	/** Valida (XSD pedRegEvento) e assina um pedido de registro de evento. */
-	public function prepararEvento(string $pedRegEventoXml): string
+	public function prepararEvento(string $pedRegEventoXml, ?PerfilAssinatura $perfil = null): string
 	{
 		$this->exigirCertificadoVigente();
 		if ($this->config->validarXsd) {
 			$this->xsd->validarOuLancar($pedRegEventoXml, 'pedRegEvento');
 		}
 
-		return $this->assinador->assinar($pedRegEventoXml, 'infPedReg');
+		return $this->assinar($pedRegEventoXml, 'infPedReg', 'pedRegEvento', $perfil);
+	}
+
+	/**
+	 * @param array<string,mixed> $infDps
+	 *
+	 * @return string XML validado, SEM assinatura
+	 */
+	private function montarDps(array $infDps): string
+	{
+		$this->exigirCertificadoVigente();
+		$xml = DpsXml::gerar($this->completar($infDps));
+		if ($this->config->validarXsd) {
+			$this->xsd->validarOuLancar($xml, 'DPS');
+		}
+
+		return $xml;
+	}
+
+	private function assinar(string $xmlSemAssinatura, string $tagAlvo, string $esquema, ?PerfilAssinatura $perfil): string
+	{
+		$assinado = (new AssinadorXml($this->config->certificado, $perfil ?? $this->perfilAtivo))->assinar($xmlSemAssinatura, $tagAlvo);
+		if ($this->config->validarXsd) {
+			$this->xsd->validarOuLancar($assinado, $esquema);
+		}
+
+		return $assinado;
+	}
+
+	/**
+	 * @param \Closure(string):RespostaSefin $enviar
+	 */
+	private function enviarComFallback(string $xmlAssinado, string $tagAlvo, string $esquema, \Closure $enviar): RespostaSefin
+	{
+		$resposta = $enviar($xmlAssinado);
+		if ($resposta->sucesso() || !$this->config->fallbackAssinatura || !$resposta->temErro(self::ERRO_ASSINATURA)) {
+			return $resposta;
+		}
+
+		$perfilUsado = AssinadorXml::verificar($xmlAssinado)['perfil'] ?? $this->perfilAtivo;
+		$outro = PerfilAssinatura::Sha1 === $perfilUsado ? PerfilAssinatura::Sha256 : PerfilAssinatura::Sha1;
+		$reassinado = $this->assinar(AssinadorXml::semAssinatura($xmlAssinado), $tagAlvo, $esquema, $outro);
+
+		$segunda = $enviar($reassinado);
+		if ($segunda->sucesso()) {
+			$this->perfilAtivo = $outro;
+			if (null !== $this->config->aoDescobrirPerfil) {
+				($this->config->aoDescobrirPerfil)($outro);
+			}
+		}
+
+		return $segunda;
 	}
 
 	/**

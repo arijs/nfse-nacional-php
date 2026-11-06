@@ -85,6 +85,17 @@ final class RespostaSefin
 		return $this->erros;
 	}
 
+	public function temErro(string $codigo): bool
+	{
+		foreach ($this->erros as $e) {
+			if (0 === strcasecmp($e->codigo, $codigo)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	/** @return list<ErroSefin> */
 	public function alertas(): array
 	{
