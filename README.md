@@ -170,9 +170,17 @@ if ($lote->temMais) { /* rode de novo */ }
 
 O formato do JSON do ADN (`StatusProcessamento`, `LoteDFe[]` com `NSU`,
 `TipoDocumento`, `ChaveAcesso`, `TipoEvento`, `DataHoraGeracao`,
-`ArquivoXml`) vem de implementações de referência validadas em homologação;
-o parser aceita também as variantes em camelCase. Confirme na primeira
-sincronização com o certificado real.
+`ArquivoXml`) foi conferido em produção em 06/11/2026. Duas coisas que o
+manual não deixa claras e a biblioteca já trata:
+
+- sem `cnpjConsulta` o ADN recusa a consulta (HTTP 400, `REJEICAO`, lista de
+  erros vazia), mesmo sendo o CNPJ do certificado. `sincronizarDfe` manda o
+  do certificado quando você não informa outro;
+- o fim da lista chega como HTTP 404 com `NENHUM_DOCUMENTO_LOCALIZADO`
+  (E2220), não como lista vazia. Isso volta como lote vazio, sem exceção.
+
+O status de uma página com documentos é `DOCUMENTOS_LOCALIZADOS`; as grafias
+em camelCase das implementações de referência continuam aceitas.
 
 `$nfse->baixarDanfse($chave)` pede o PDF oficial ao ADN. Esse serviço tem
 ficado indisponível por períodos (a NT 008 orienta gerar o DANFSe

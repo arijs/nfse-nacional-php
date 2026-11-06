@@ -9,8 +9,20 @@ namespace Arijs\NfseNacional\Adn;
  */
 final class LoteDfe
 {
+	/** Como o ADN de produção escreve (06/11/2026). */
+	public const STATUS_LOCALIZADOS = 'DOCUMENTOS_LOCALIZADOS';
+	public const STATUS_NENHUM = 'NENHUM_DOCUMENTO_LOCALIZADO';
+	/** Grafias das implementações de referência — também aceitas. */
 	public const STATUS_NORMAL = 'ProcessamentoNormal';
-	public const STATUS_NENHUM = 'NenhumDocumentoLocalizado';
+	public const STATUS_NENHUM_ALT = 'NenhumDocumentoLocalizado';
+	/** "Nenhum documento localizado a partir do NSU informado" — vem com HTTP 404. */
+	public const ERRO_NENHUM_DOCUMENTO = 'E2220';
+
+	/** Status de "não há mais nada", em qualquer das grafias. */
+	public static function nenhumDocumento(?string $status): bool
+	{
+		return null !== $status && 'nenhumdocumentolocalizado' === strtolower(str_replace('_', '', $status));
+	}
 
 	/** @param list<DocumentoDfe> $documentos */
 	public function __construct(

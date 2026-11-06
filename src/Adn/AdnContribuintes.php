@@ -42,7 +42,12 @@ final class AdnContribuintes
 	/**
 	 * Uma página: os documentos com NSU maior que `$nsu`.
 	 *
-	 * @param string|null $cnpjConsulta CNPJ a consultar quando difere do CNPJ do certificado (mesma raiz)
+	 * Sem documentos depois de `$nsu`, o ADN responde 404 com E2220; isso volta
+	 * como lote vazio (fim normal), não como exceção.
+	 *
+	 * @param string|null $cnpjConsulta CNPJ consultado (mesma raiz do certificado). O ADN de produção
+	 *                                  recusa a consulta sem ele; {@see \Arijs\NfseNacional\Nfse::sincronizarDfe}
+	 *                                  já manda o do certificado
 	 */
 	public function distribuir(int $nsu, ?string $cnpjConsulta = null, bool $lote = true): LoteDfe
 	{
@@ -58,11 +63,16 @@ final class AdnContribuintes
 			$this->urlBase.'/contribuintes/DFe/'.$nsu.'?'.http_build_query($query),
 			['Accept' => 'application/json'],
 		));
-		if (!$resposta->sucesso()) {
-			throw new SefinExcecao($resposta);
-		}
 		$dados = $resposta->dados();
 		$status = $dados['StatusProcessamento'] ?? $dados['statusProcessamento'] ?? null;
+		if (!$resposta->sucesso()) {
+			// "Acabou" chega como 404 + NENHUM_DOCUMENTO_LOCALIZADO (E2220), não
+			// como 200 com lista vazia: é o fim normal de toda sincronização.
+			if (404 === $resposta->status && (LoteDfe::nenhumDocumento(\is_string($status) ? $status : null) || $resposta->temErro(LoteDfe::ERRO_NENHUM_DOCUMENTO))) {
+				return new LoteDfe([], $nsu, \is_string($status) ? $status : LoteDfe::STATUS_NENHUM, false, 1);
+			}
+			throw new SefinExcecao($resposta);
+		}
 		$itens = $dados['LoteDFe'] ?? $dados['loteDFe'] ?? $dados['loteDfe'] ?? [];
 
 		$documentos = [];
@@ -109,7 +119,7 @@ final class AdnContribuintes
 			}
 			array_push($todos, ...$pagina->documentos);
 			$nsu = $pagina->ultimoNsu;
-			if (LoteDfe::STATUS_NENHUM === $pagina->statusProcessamento) {
+			if (LoteDfe::nenhumDocumento($pagina->statusProcessamento)) {
 				$temMais = false;
 				break;
 			}

@@ -92,7 +92,10 @@ final class Nfse
 	 */
 	public function sincronizarDfe(int $ultimoNsu = 0, int $maxPaginas = 20, ?\Closure $aoReceber = null, ?string $cnpjConsulta = null): LoteDfe
 	{
-		return $this->adn->sincronizar($ultimoNsu, $maxPaginas, $cnpjConsulta, $aoReceber);
+		// O ADN de produção recusa a consulta sem `cnpjConsulta` (HTTP 400,
+		// "TipoConsulta":"InscricaoCertificado", lista de erros vazia — visto
+		// em 06/11/2026), mesmo quando o CNPJ é o do certificado.
+		return $this->adn->sincronizar($ultimoNsu, $maxPaginas, $cnpjConsulta ?? $this->config->certificado->cnpjOuCpf(), $aoReceber);
 	}
 
 	/** PDF oficial do DANFSe (ver observação em {@see AdnContribuintes::baixarDanfse}). */

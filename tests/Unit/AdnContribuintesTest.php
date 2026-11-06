@@ -5,8 +5,11 @@ namespace Arijs\NfseNacional\Tests\Unit;
 use Arijs\NfseNacional\Adn\AdnContribuintes;
 use Arijs\NfseNacional\Adn\LoteDfe;
 use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Configuracao;
 use Arijs\NfseNacional\Excecao\DadosExcecao;
 use Arijs\NfseNacional\Excecao\SefinExcecao;
+use Arijs\NfseNacional\Nfse;
+use Arijs\NfseNacional\Tests\Support\CertificadoTeste;
 use Arijs\NfseNacional\Tests\Support\ClienteHttpFalso;
 use Arijs\NfseNacional\Util\Gzip;
 use PHPUnit\Framework\TestCase;
@@ -91,6 +94,56 @@ final class AdnContribuintesTest extends TestCase
 		self::assertSame(2, $lote->ultimoNsu);
 		self::assertTrue($lote->temMais);
 		self::assertSame(2, $lote->paginas);
+	}
+
+	/** Como o ADN de produção respondeu em 06/11/2026: status em CAIXA_ALTA e fim da lista em 404 + E2220. */
+	public function testSincronizarComAsRespostasReaisDoAdn(): void
+	{
+		$http = (new ClienteHttpFalso())
+			->responder(200, ['TipoConsulta' => 'CnpjBase', 'StatusProcessamento' => 'DOCUMENTOS_LOCALIZADOS', 'LoteDFe' => [self::item(1, 'NFSE', self::CHAVE_A), self::item(2, 'NFSE', self::CHAVE_B)], 'Erros' => []])
+			->responder(404, ['TipoConsulta' => 'CnpjBase', 'StatusProcessamento' => 'NENHUM_DOCUMENTO_LOCALIZADO', 'LoteDFe' => [], 'Erros' => [['Codigo' => 'E2220', 'Descricao' => 'Nenhum documento localizado - não existem documentos fiscais para o Contribuinte a partir do NSU informado.']]]);
+
+		$lote = (new AdnContribuintes(Ambiente::Producao, $http))->sincronizar(0, 20, '12345678000195');
+
+		self::assertCount(2, $lote->documentos);
+		self::assertSame(2, $lote->ultimoNsu);
+		self::assertFalse($lote->temMais);
+		self::assertSame(LoteDfe::STATUS_NENHUM, $lote->statusProcessamento);
+		self::assertStringStartsWith('https://adn.nfse.gov.br/contribuintes/DFe/2?', $http->chamadas[1]['url']);
+	}
+
+	public function testFimDaListaSoComOCodigoE2220(): void
+	{
+		$http = (new ClienteHttpFalso())->responder(404, ['erros' => [['codigo' => 'E2220', 'descricao' => 'Nenhum documento localizado']]]);
+
+		$lote = (new AdnContribuintes(Ambiente::Producao, $http))->distribuir(7, '12345678000195');
+
+		self::assertTrue($lote->vazio());
+		self::assertSame(7, $lote->ultimoNsu);
+		self::assertTrue(LoteDfe::nenhumDocumento($lote->statusProcessamento));
+	}
+
+	public function testSincronizarDfeDaFachadaMandaOCnpjDoCertificado(): void
+	{
+		$http = (new ClienteHttpFalso())->responder(404, [
+			'StatusProcessamento' => 'NENHUM_DOCUMENTO_LOCALIZADO',
+			'LoteDFe' => [],
+			'Erros' => [['Codigo' => 'E2220', 'Descricao' => 'Nenhum documento localizado']],
+		]);
+		$nfse = new Nfse(new Configuracao(Ambiente::Producao, CertificadoTeste::certificado()), $http);
+
+		$lote = $nfse->sincronizarDfe(23);
+
+		self::assertSame('https://adn.nfse.gov.br/contribuintes/DFe/23?lote=true&cnpjConsulta='.CertificadoTeste::CNPJ, $http->chamadas[0]['url']);
+		self::assertTrue($lote->vazio());
+		self::assertSame(23, $lote->ultimoNsu);
+	}
+
+	public function testOutro404ContinuaSendoErro(): void
+	{
+		$http = (new ClienteHttpFalso())->responder(404, ['StatusProcessamento' => 'REJEICAO', 'Erros' => [['Codigo' => 'E9999', 'Descricao' => 'outra coisa']]]);
+		$this->expectException(SefinExcecao::class);
+		(new AdnContribuintes(Ambiente::Producao, $http))->distribuir(0, '12345678000195');
 	}
 
 	public function testErroHttpViraSefinExcecao(): void
