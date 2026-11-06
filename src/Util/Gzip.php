@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Util;
+namespace Arijs\NfseNacional\Util;
 
-use Rhengles\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Excecao\DadosExcecao;
 
 /**
  * A "área de dados" da API Sefin: o XML vai e volta comprimido em GZIP e

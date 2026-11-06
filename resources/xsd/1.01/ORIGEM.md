@@ -7,7 +7,7 @@ Copiados sem alteração do pacote oficial publicado no Portal da NFS-e:
 - Pasta de origem dentro do zip: `Schemas/1.01/`
 
 Quando o portal publicar uma versão nova, substitua a pasta inteira e atualize
-`Rhengles\NfseNacional\Dps\DpsXml::VERSAO_LEIAUTE` se a versão mudar.
+`Arijs\NfseNacional\Dps\DpsXml::VERSAO_LEIAUTE` se a versão mudar.
 
 ## Ajuste local (único)
 

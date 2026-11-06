@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional;
+namespace Arijs\NfseNacional;
 
-use Rhengles\NfseNacional\Assinatura\PerfilAssinatura;
-use Rhengles\NfseNacional\Certificado\CertificadoDigital;
-use Rhengles\NfseNacional\Excecao\CertificadoExcecao;
+use Arijs\NfseNacional\Assinatura\PerfilAssinatura;
+use Arijs\NfseNacional\Certificado\CertificadoDigital;
+use Arijs\NfseNacional\Excecao\CertificadoExcecao;
 
 /**
  * Tudo que a {@see Nfse} precisa saber e que não muda de nota para nota.

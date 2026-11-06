@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Http;
+namespace Arijs\NfseNacional\Http;
 
 final class RespostaHttp
 {

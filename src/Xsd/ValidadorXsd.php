@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Xsd;
+namespace Arijs\NfseNacional\Xsd;
 
-use Rhengles\NfseNacional\Excecao\XsdExcecao;
+use Arijs\NfseNacional\Excecao\XsdExcecao;
 
 /**
  * Validação contra os esquemas oficiais em `resources/xsd/<versão>/`.

@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Unit;
+namespace Arijs\NfseNacional\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Rhengles\NfseNacional\Certificado\CertificadoDigital;
-use Rhengles\NfseNacional\Excecao\CertificadoExcecao;
-use Rhengles\NfseNacional\Tests\Support\CertificadoTeste;
+use Arijs\NfseNacional\Certificado\CertificadoDigital;
+use Arijs\NfseNacional\Excecao\CertificadoExcecao;
+use Arijs\NfseNacional\Tests\Support\CertificadoTeste;
 
 final class CertificadoDigitalTest extends TestCase
 {

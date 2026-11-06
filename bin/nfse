@@ -19,11 +19,11 @@
  *   NFSE_VERSAO_APLICATIVO, NFSE_PERFIL_ASSINATURA (sha1|sha256), NFSE_URL_SEFIN
  */
 
-use Rhengles\NfseNacional\Configuracao;
-use Rhengles\NfseNacional\Excecao\NfseExcecao;
-use Rhengles\NfseNacional\Excecao\SefinExcecao;
-use Rhengles\NfseNacional\Nfse;
-use Rhengles\NfseNacional\Sefin\RespostaSefin;
+use Arijs\NfseNacional\Configuracao;
+use Arijs\NfseNacional\Excecao\NfseExcecao;
+use Arijs\NfseNacional\Excecao\SefinExcecao;
+use Arijs\NfseNacional\Nfse;
+use Arijs\NfseNacional\Sefin\RespostaSefin;
 
 foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoload) {
 	if (is_file($autoload)) {

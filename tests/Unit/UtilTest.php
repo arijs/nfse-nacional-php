@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Unit;
+namespace Arijs\NfseNacional\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Rhengles\NfseNacional\Ambiente;
-use Rhengles\NfseNacional\Assinatura\PerfilAssinatura;
-use Rhengles\NfseNacional\Excecao\DadosExcecao;
-use Rhengles\NfseNacional\Util\Formato;
-use Rhengles\NfseNacional\Util\Gzip;
+use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Assinatura\PerfilAssinatura;
+use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Util\Formato;
+use Arijs\NfseNacional\Util\Gzip;
 
 final class UtilTest extends TestCase
 {

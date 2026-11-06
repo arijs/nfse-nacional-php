@@ -1,15 +1,15 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Unit;
+namespace Arijs\NfseNacional\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Rhengles\NfseNacional\Assinatura\AssinadorXml;
-use Rhengles\NfseNacional\Assinatura\PerfilAssinatura;
-use Rhengles\NfseNacional\Dps\DpsXml;
-use Rhengles\NfseNacional\Excecao\AssinaturaExcecao;
-use Rhengles\NfseNacional\Tests\Support\CertificadoTeste;
-use Rhengles\NfseNacional\Tests\Support\DpsExemplo;
-use Rhengles\NfseNacional\Xsd\ValidadorXsd;
+use Arijs\NfseNacional\Assinatura\AssinadorXml;
+use Arijs\NfseNacional\Assinatura\PerfilAssinatura;
+use Arijs\NfseNacional\Dps\DpsXml;
+use Arijs\NfseNacional\Excecao\AssinaturaExcecao;
+use Arijs\NfseNacional\Tests\Support\CertificadoTeste;
+use Arijs\NfseNacional\Tests\Support\DpsExemplo;
+use Arijs\NfseNacional\Xsd\ValidadorXsd;
 
 final class AssinadorXmlTest extends TestCase
 {

@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Unit;
+namespace Arijs\NfseNacional\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Rhengles\NfseNacional\Ambiente;
-use Rhengles\NfseNacional\Excecao\SefinExcecao;
-use Rhengles\NfseNacional\Sefin\SefinNacional;
-use Rhengles\NfseNacional\Tests\Support\ClienteHttpFalso;
-use Rhengles\NfseNacional\Util\Gzip;
+use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Excecao\SefinExcecao;
+use Arijs\NfseNacional\Sefin\SefinNacional;
+use Arijs\NfseNacional\Tests\Support\ClienteHttpFalso;
+use Arijs\NfseNacional\Util\Gzip;
 
 final class SefinNacionalTest extends TestCase
 {

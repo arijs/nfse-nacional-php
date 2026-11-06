@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Sefin;
+namespace Arijs\NfseNacional\Sefin;
 
 /**
  * Um item da lista `erros` (ou `alertas`) da API Sefin. O código segue a

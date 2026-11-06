@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Http;
+namespace Arijs\NfseNacional\Http;
 
-use Rhengles\NfseNacional\Excecao\TransporteExcecao;
+use Arijs\NfseNacional\Excecao\TransporteExcecao;
 
 /**
  * Transporte HTTP. Interface para o cliente da Sefin ser testável sem rede e

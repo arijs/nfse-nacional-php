@@ -1,17 +1,17 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional;
+namespace Arijs\NfseNacional;
 
-use Rhengles\NfseNacional\Assinatura\AssinadorXml;
-use Rhengles\NfseNacional\Dps\DpsXml;
-use Rhengles\NfseNacional\Evento\PedidoRegistroEventoXml;
-use Rhengles\NfseNacional\Excecao\CertificadoExcecao;
-use Rhengles\NfseNacional\Excecao\DadosExcecao;
-use Rhengles\NfseNacional\Http\ClienteHttp;
-use Rhengles\NfseNacional\Http\ClienteHttpCurl;
-use Rhengles\NfseNacional\Sefin\RespostaSefin;
-use Rhengles\NfseNacional\Sefin\SefinNacional;
-use Rhengles\NfseNacional\Xsd\ValidadorXsd;
+use Arijs\NfseNacional\Assinatura\AssinadorXml;
+use Arijs\NfseNacional\Dps\DpsXml;
+use Arijs\NfseNacional\Evento\PedidoRegistroEventoXml;
+use Arijs\NfseNacional\Excecao\CertificadoExcecao;
+use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Http\ClienteHttp;
+use Arijs\NfseNacional\Http\ClienteHttpCurl;
+use Arijs\NfseNacional\Sefin\RespostaSefin;
+use Arijs\NfseNacional\Sefin\SefinNacional;
+use Arijs\NfseNacional\Xsd\ValidadorXsd;
 
 /**
  * Fachada: o fluxo completo de uma nota em uma chamada.

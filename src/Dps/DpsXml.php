@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Dps;
+namespace Arijs\NfseNacional\Dps;
 
-use Rhengles\NfseNacional\Excecao\DadosExcecao;
-use Rhengles\NfseNacional\Util\Formato;
+use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Util\Formato;
 
 /**
  * Gera o XML da DPS (Declaração de Prestação de Serviços) a partir de um

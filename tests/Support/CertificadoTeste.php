@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Support;
+namespace Arijs\NfseNacional\Tests\Support;
 
-use Rhengles\NfseNacional\Certificado\CertificadoDigital;
+use Arijs\NfseNacional\Certificado\CertificadoDigital;
 
 /**
  * Certificado autoassinado gerado em memória, com CN no padrão ICP-Brasil

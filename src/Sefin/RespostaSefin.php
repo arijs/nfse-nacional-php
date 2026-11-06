@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Sefin;
+namespace Arijs\NfseNacional\Sefin;
 
-use Rhengles\NfseNacional\Excecao\SefinExcecao;
-use Rhengles\NfseNacional\Http\RespostaHttp;
-use Rhengles\NfseNacional\Util\Gzip;
+use Arijs\NfseNacional\Excecao\SefinExcecao;
+use Arijs\NfseNacional\Http\RespostaHttp;
+use Arijs\NfseNacional\Util\Gzip;
 
 /**
  * Resposta de qualquer chamada à API Sefin, já interpretada.

@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Support;
+namespace Arijs\NfseNacional\Tests\Support;
 
-use Rhengles\NfseNacional\Http\ClienteHttp;
-use Rhengles\NfseNacional\Http\RespostaHttp;
+use Arijs\NfseNacional\Http\ClienteHttp;
+use Arijs\NfseNacional\Http\RespostaHttp;
 
 /** Devolve respostas enfileiradas e guarda o que foi enviado. */
 final class ClienteHttpFalso implements ClienteHttp

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Support;
+namespace Arijs\NfseNacional\Tests\Support;
 
 /** infDPS mínimo e válido: prestador do Simples Nacional, tomador PJ nacional. */
 final class DpsExemplo

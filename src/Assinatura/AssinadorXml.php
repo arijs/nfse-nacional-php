@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Assinatura;
+namespace Arijs\NfseNacional\Assinatura;
 
-use Rhengles\NfseNacional\Certificado\CertificadoDigital;
-use Rhengles\NfseNacional\Excecao\AssinaturaExcecao;
+use Arijs\NfseNacional\Certificado\CertificadoDigital;
+use Arijs\NfseNacional\Excecao\AssinaturaExcecao;
 
 /**
  * Assinatura XMLDSig "enveloped" do padrão NFS-e: assina o elemento que tem o

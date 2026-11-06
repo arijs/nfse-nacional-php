@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Evento;
+namespace Arijs\NfseNacional\Evento;
 
-use Rhengles\NfseNacional\Ambiente;
-use Rhengles\NfseNacional\Dps\DpsXml;
-use Rhengles\NfseNacional\Excecao\DadosExcecao;
-use Rhengles\NfseNacional\Util\Formato;
+use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Dps\DpsXml;
+use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Util\Formato;
 
 /**
  * XML do Pedido de Registro de Evento (pedRegEvento_v1.01.xsd).

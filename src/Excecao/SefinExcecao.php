@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Excecao;
+namespace Arijs\NfseNacional\Excecao;
 
-use Rhengles\NfseNacional\Sefin\RespostaSefin;
+use Arijs\NfseNacional\Sefin\RespostaSefin;
 
 /**
  * A Sefin respondeu, mas recusou o pedido (HTTP 4xx/5xx ou lista `erros`).

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional;
+namespace Arijs\NfseNacional;
 
 /**
  * Ambientes do Sistema Nacional NFS-e.

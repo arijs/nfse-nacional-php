@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Assinatura;
+namespace Arijs\NfseNacional\Assinatura;
 
 /**
  * Dois conjuntos de algoritmos circulam para a assinatura da DPS:

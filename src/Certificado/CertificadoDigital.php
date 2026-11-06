@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Certificado;
+namespace Arijs\NfseNacional\Certificado;
 
-use Rhengles\NfseNacional\Excecao\CertificadoExcecao;
+use Arijs\NfseNacional\Excecao\CertificadoExcecao;
 
 /**
  * Certificado digital ICP-Brasil (e-CNPJ ou e-CPF) do emitente, modelo A1.

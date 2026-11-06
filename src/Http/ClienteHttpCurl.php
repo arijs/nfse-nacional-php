@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Http;
+namespace Arijs\NfseNacional\Http;
 
-use Rhengles\NfseNacional\Certificado\CertificadoDigital;
-use Rhengles\NfseNacional\Excecao\TransporteExcecao;
+use Arijs\NfseNacional\Certificado\CertificadoDigital;
+use Arijs\NfseNacional\Excecao\TransporteExcecao;
 
 /**
  * {@see ClienteHttp} sobre cURL com autenticação mútua TLS (mTLS) pelo
@@ -21,7 +21,7 @@ final class ClienteHttpCurl implements ClienteHttp
 		private readonly int $timeout = 60,
 		private readonly int $timeoutConexao = 10,
 		private readonly ?string $caBundle = null,
-		private readonly string $userAgent = 'rhengles/nfse-nacional (PHP)',
+		private readonly string $userAgent = 'arijs/nfse-nacional (PHP)',
 	) {
 	}
 

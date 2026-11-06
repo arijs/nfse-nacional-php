@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Util;
+namespace Arijs\NfseNacional\Util;
 
 /**
  * Formatos exigidos pelos tipos simples do leiaute (tiposSimples_v1.01.xsd).

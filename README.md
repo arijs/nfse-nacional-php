@@ -38,25 +38,25 @@ repositório Git:
 ```json
 {
     "repositories": [
-        { "type": "vcs", "url": "https://github.com/rhengles/nfse-nacional-php" }
+        { "type": "vcs", "url": "https://github.com/arijs/nfse-nacional-php" }
     ],
     "require": {
-        "rhengles/nfse-nacional": "^0.1"
+        "arijs/nfse-nacional": "^0.1"
     }
 }
 ```
 
 ```bash
-composer require rhengles/nfse-nacional
+composer require arijs/nfse-nacional
 ```
 
 ## Uso
 
 ```php
-use Rhengles\NfseNacional\Ambiente;
-use Rhengles\NfseNacional\Certificado\CertificadoDigital;
-use Rhengles\NfseNacional\Configuracao;
-use Rhengles\NfseNacional\Nfse;
+use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Certificado\CertificadoDigital;
+use Arijs\NfseNacional\Configuracao;
+use Arijs\NfseNacional\Nfse;
 
 $nfse = new Nfse(new Configuracao(
     ambiente: Ambiente::Homologacao,                       // ou Ambiente::Producao

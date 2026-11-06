@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Sefin;
+namespace Arijs\NfseNacional\Sefin;
 
-use Rhengles\NfseNacional\Ambiente;
-use Rhengles\NfseNacional\Http\ClienteHttp;
-use Rhengles\NfseNacional\Util\Formato;
-use Rhengles\NfseNacional\Util\Gzip;
+use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Http\ClienteHttp;
+use Arijs\NfseNacional\Util\Formato;
+use Arijs\NfseNacional\Util\Gzip;
 
 /**
  * Cliente da API Sefin Nacional (Emissor Público Nacional), conforme o
@@ -21,7 +21,7 @@ use Rhengles\NfseNacional\Util\Gzip;
  *  GET  /parametros_municipais/{cMun}/...
  *
  * Esta classe só fala JSON com a API. Montar, validar e assinar o XML é
- * trabalho de {@see \Rhengles\NfseNacional\Nfse}.
+ * trabalho de {@see \Arijs\NfseNacional\Nfse}.
  */
 final class SefinNacional
 {

@@ -1,21 +1,21 @@
 <?php declare(strict_types=1);
 
-namespace Rhengles\NfseNacional\Tests\Unit;
+namespace Arijs\NfseNacional\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Rhengles\NfseNacional\Ambiente;
-use Rhengles\NfseNacional\Assinatura\AssinadorXml;
-use Rhengles\NfseNacional\Configuracao;
-use Rhengles\NfseNacional\Evento\PedidoRegistroEventoXml;
-use Rhengles\NfseNacional\Excecao\CertificadoExcecao;
-use Rhengles\NfseNacional\Excecao\DadosExcecao;
-use Rhengles\NfseNacional\Excecao\XsdExcecao;
-use Rhengles\NfseNacional\Nfse;
-use Rhengles\NfseNacional\Tests\Support\CertificadoTeste;
-use Rhengles\NfseNacional\Tests\Support\ClienteHttpFalso;
-use Rhengles\NfseNacional\Tests\Support\DpsExemplo;
-use Rhengles\NfseNacional\Util\Gzip;
-use Rhengles\NfseNacional\Xsd\ValidadorXsd;
+use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Assinatura\AssinadorXml;
+use Arijs\NfseNacional\Configuracao;
+use Arijs\NfseNacional\Evento\PedidoRegistroEventoXml;
+use Arijs\NfseNacional\Excecao\CertificadoExcecao;
+use Arijs\NfseNacional\Excecao\DadosExcecao;
+use Arijs\NfseNacional\Excecao\XsdExcecao;
+use Arijs\NfseNacional\Nfse;
+use Arijs\NfseNacional\Tests\Support\CertificadoTeste;
+use Arijs\NfseNacional\Tests\Support\ClienteHttpFalso;
+use Arijs\NfseNacional\Tests\Support\DpsExemplo;
+use Arijs\NfseNacional\Util\Gzip;
+use Arijs\NfseNacional\Xsd\ValidadorXsd;
 
 final class NfseTest extends TestCase
 {
@@ -98,7 +98,7 @@ final class NfseTest extends TestCase
 	public function testCertificadoForaDaValidadeNaoAssina(): void
 	{
 		$p = CertificadoTeste::pems(1);
-		$cert = \Rhengles\NfseNacional\Certificado\CertificadoDigital::dePem($p['cert'], $p['chave']);
+		$cert = \Arijs\NfseNacional\Certificado\CertificadoDigital::dePem($p['cert'], $p['chave']);
 		self::assertTrue($cert->vigente());
 		self::assertFalse($cert->vigente(new \DateTimeImmutable('+10 days')));
 		self::assertFalse($cert->vigente(new \DateTimeImmutable('-1 day')));
