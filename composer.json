@@ -1,0 +1,32 @@
+{
+    "name": "rhengles/nfse-nacional",
+    "description": "Emissão de NFS-e pelo Sistema Nacional NFS-e (Sefin Nacional): DPS em XML, assinatura XMLDSig, validação XSD e cliente REST com mTLS. PHP puro, sem framework.",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": ["nfse", "nfs-e", "sefin", "padrao-nacional", "dps", "fiscal"],
+    "require": {
+        "php": ">=8.2",
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-json": "*",
+        "ext-libxml": "*",
+        "ext-openssl": "*",
+        "ext-zlib": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": { "Rhengles\\NfseNacional\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Rhengles\\NfseNacional\\Tests\\": "tests/" }
+    },
+    "bin": ["bin/nfse"],
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

@@ -1,0 +1,35 @@
+{
+    "_comentario": "Conteúdo do grupo infDPS. Chaves = nomes dos elementos do leiaute 1.01. tpAmb, verAplic, dhEmi, dCompet, tpEmit e prest.CNPJ são preenchidos pela biblioteca quando omitidos.",
+    "serie": "1",
+    "nDPS": "1",
+    "cLocEmi": "3550308",
+    "prest": {
+        "IM": "12345678",
+        "regTrib": { "opSimpNac": "3", "regApTribSN": "1", "regEspTrib": "0" }
+    },
+    "toma": {
+        "CNPJ": "98765432000188",
+        "xNome": "CLIENTE EXEMPLO LTDA",
+        "end": {
+            "endNac": { "cMun": "3550308", "CEP": "01001000" },
+            "xLgr": "Praça da Sé",
+            "nro": "1",
+            "xBairro": "Sé"
+        },
+        "email": "financeiro@cliente.example"
+    },
+    "serv": {
+        "locPrest": { "cLocPrestacao": "3550308" },
+        "cServ": {
+            "cTribNac": "010701",
+            "xDescServ": "Licença de uso de software DDSOFT - mensalidade 11/2026"
+        }
+    },
+    "valores": {
+        "vServPrest": { "vServ": 1500.00 },
+        "trib": {
+            "tribMun": { "tribISSQN": "1", "tpRetISSQN": "1", "pAliq": 2.00 },
+            "totTrib": { "pTotTribSN": 6.00 }
+        }
+    }
+}

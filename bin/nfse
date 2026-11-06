@@ -1,0 +1,194 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+
+/**
+ * CLI da biblioteca — para testar a integração em produção restrita sem
+ * escrever código, e para operações avulsas (consultar, cancelar).
+ *
+ *   nfse cert                        dados do certificado configurado
+ *   nfse validar  dps.json           gera, valida (XSD) e assina; imprime o XML
+ *   nfse emitir   dps.json [dir]     emite; grava JSON da resposta e XML da NFS-e em [dir]
+ *   nfse consultar <chave> [dir]     NFS-e pela chave de acesso
+ *   nfse dps      <idDps>            chave de acesso a partir do Id da DPS
+ *   nfse cancelar <chave> <motivo> "<justificativa>"   motivo: 1 erro, 2 não prestado, 9 outros
+ *   nfse eventos  <chave>
+ *   nfse convenio <codMunicipio>     parâmetros do convênio do município
+ *
+ * Configuração por variáveis de ambiente (ou --env=arquivo.env):
+ *   NFSE_AMBIENTE=2  NFSE_CERT_PFX=/caminho/cert.pfx  NFSE_CERT_SENHA=...
+ *   NFSE_VERSAO_APLICATIVO, NFSE_PERFIL_ASSINATURA (sha1|sha256), NFSE_URL_SEFIN
+ */
+
+use Rhengles\NfseNacional\Configuracao;
+use Rhengles\NfseNacional\Excecao\NfseExcecao;
+use Rhengles\NfseNacional\Excecao\SefinExcecao;
+use Rhengles\NfseNacional\Nfse;
+use Rhengles\NfseNacional\Sefin\RespostaSefin;
+
+foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoload) {
+	if (is_file($autoload)) {
+		require $autoload;
+		break;
+	}
+}
+
+$args = array_slice($argv, 1);
+$env = [];
+foreach ($args as $i => $a) {
+	if (str_starts_with($a, '--env=')) {
+		$env = lerEnv(substr($a, 6));
+		unset($args[$i]);
+	}
+}
+$args = array_values($args);
+$comando = $args[0] ?? 'ajuda';
+
+$ler = static fn(string $k): string => (string) ($env[$k] ?? $_ENV[$k] ?? $_SERVER[$k] ?? getenv($k) ?: '');
+
+try {
+	switch ($comando) {
+		case 'cert':
+			$cfg = config($env);
+			saida($cfg->certificado->resumo() + ['ambiente' => $cfg->ambiente->nome(), 'perfil_assinatura' => $cfg->perfilAssinatura->value]);
+			break;
+
+		case 'validar':
+			$nfse = new Nfse(config($env));
+			echo $nfse->prepararDps(lerDps($args[1] ?? null)), \PHP_EOL;
+			fwrite(\STDERR, "OK: DPS válida contra o XSD e assinada.\n");
+			break;
+
+		case 'emitir':
+			$nfse = new Nfse(config($env));
+			$xml = $nfse->prepararDps(lerDps($args[1] ?? null));
+			$r = $nfse->emitir($xml);
+			gravar($args[2] ?? null, $r, $xml);
+			saida($r->paraArray());
+			$r->exigirSucesso();
+			break;
+
+		case 'consultar':
+			$r = (new Nfse(config($env)))->consultar(exigir($args[1] ?? null, 'chave de acesso'));
+			gravar($args[2] ?? null, $r);
+			saida($r->paraArray());
+			$r->exigirSucesso();
+			break;
+
+		case 'dps':
+			$r = (new Nfse(config($env)))->sefin()->consultarChavePorDps(exigir($args[1] ?? null, 'Id da DPS'));
+			saida($r->paraArray());
+			$r->exigirSucesso();
+			break;
+
+		case 'cancelar':
+			$r = (new Nfse(config($env)))->cancelar(
+				exigir($args[1] ?? null, 'chave de acesso'),
+				(int) exigir($args[2] ?? null, 'motivo (1, 2 ou 9)'),
+				exigir($args[3] ?? null, 'justificativa (15 a 255 caracteres)'),
+			);
+			saida($r->paraArray());
+			$r->exigirSucesso();
+			break;
+
+		case 'eventos':
+			$r = (new Nfse(config($env)))->sefin()->consultarEventos(exigir($args[1] ?? null, 'chave de acesso'));
+			saida($r->paraArray() + ['xmls_conteudo' => $r->xmls()]);
+			$r->exigirSucesso();
+			break;
+
+		case 'convenio':
+			$r = (new Nfse(config($env)))->sefin()->consultarConvenioMunicipio(exigir($args[1] ?? null, 'código IBGE do município'));
+			saida($r->paraArray());
+			$r->exigirSucesso();
+			break;
+
+		default:
+			$doc = (string) file_get_contents(__FILE__);
+			preg_match('#/\*\*(.*?)\*/#s', $doc, $m);
+			echo preg_replace('/^\s*\* ?/m', '', $m[1] ?? ''), \PHP_EOL;
+			exit('ajuda' === $comando ? 0 : 1);
+	}
+} catch (SefinExcecao $e) {
+	fwrite(\STDERR, 'Sefin recusou: '.$e->getMessage().\PHP_EOL);
+	exit(2);
+} catch (NfseExcecao|\InvalidArgumentException $e) {
+	fwrite(\STDERR, 'Erro: '.$e->getMessage().\PHP_EOL);
+	exit(1);
+}
+
+function config(array $env): Configuracao
+{
+	return Configuracao::doAmbiente([] === $env ? null : $env + array_filter($_ENV) + array_filter(getenv()));
+}
+
+/** @return array<string,mixed> */
+function lerDps(?string $arquivo): array
+{
+	$arquivo = exigir($arquivo, 'arquivo JSON da DPS');
+	if (!is_file($arquivo)) {
+		throw new \InvalidArgumentException("Arquivo não encontrado: {$arquivo}");
+	}
+	$dados = json_decode((string) file_get_contents($arquivo), true, 64, \JSON_THROW_ON_ERROR);
+	if (!\is_array($dados)) {
+		throw new \InvalidArgumentException('O JSON precisa ser um objeto com o conteúdo do infDPS.');
+	}
+	unset($dados['_comentario']);
+
+	return $dados;
+}
+
+function exigir(?string $v, string $oQue): string
+{
+	if (null === $v || '' === trim($v)) {
+		throw new \InvalidArgumentException("Informe {$oQue}.");
+	}
+
+	return trim($v);
+}
+
+function gravar(?string $dir, RespostaSefin $r, ?string $dpsXml = null): void
+{
+	if (null === $dir) {
+		return;
+	}
+	if (!is_dir($dir) && !mkdir($dir, 0750, true)) {
+		throw new \InvalidArgumentException("Não foi possível criar o diretório {$dir}.");
+	}
+	$base = rtrim($dir, '/').'/'.($r->chaveAcesso() ?? date('Ymd-His'));
+	if (null !== $dpsXml) {
+		file_put_contents($base.'-dps.xml', $dpsXml);
+	}
+	file_put_contents($base.'-resposta.json', $r->corpoBruto);
+	foreach ($r->xmls() as $nome => $xml) {
+		file_put_contents("{$base}-{$nome}.xml", $xml);
+	}
+	fwrite(\STDERR, "Arquivos gravados com prefixo {$base}\n");
+}
+
+function saida(array $dados): void
+{
+	echo json_encode($dados, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES), \PHP_EOL;
+}
+
+/** @return array<string,string> */
+function lerEnv(string $arquivo): array
+{
+	if (!is_file($arquivo)) {
+		throw new \InvalidArgumentException("Arquivo .env não encontrado: {$arquivo}");
+	}
+	$env = [];
+	foreach (file($arquivo, \FILE_IGNORE_NEW_LINES | \FILE_SKIP_EMPTY_LINES) ?: [] as $linha) {
+		$linha = trim($linha);
+		if ('' === $linha || str_starts_with($linha, '#') || !str_contains($linha, '=')) {
+			continue;
+		}
+		[$k, $v] = explode('=', $linha, 2);
+		$v = trim($v);
+		if (\strlen($v) >= 2 && ($v[0] === '"' || $v[0] === "'") && $v[0] === $v[-1]) {
+			$v = substr($v, 1, -1);
+		}
+		$env[trim($k)] = $v;
+	}
+
+	return $env;
+}
