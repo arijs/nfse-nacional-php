@@ -15,6 +15,11 @@
  *   nfse convenio <codMunicipio>     parâmetros do convênio do município
  *   nfse perfil   dps.json           (só homologação) emite uma DPS de teste com cada
  *                                    perfil de assinatura e diz qual a Sefin aceita
+ *   nfse faixa    <cLocEmi> <serie> <de> <ate> [dir]   NFS-e emitidas numa faixa de nDPS
+ *                                    (uma chamada por número); com [dir] grava os XMLs
+ *   nfse sincronizar <ultimoNsu> [dir] [maxPaginas]    distribuição do ADN a partir do NSU:
+ *                                    notas emitidas, recebidas e eventos; grava XMLs em [dir]
+ *   nfse danfse   <chave> <arquivo.pdf>   PDF oficial do DANFSe (quando o ADN o oferece)
  *
  * Configuração por variáveis de ambiente (ou --env=arquivo.env):
  *   NFSE_AMBIENTE=2  NFSE_CERT_PFX=/caminho/cert.pfx  NFSE_CERT_SENHA=...
@@ -123,6 +128,56 @@ try {
 			}
 			break;
 
+		case 'faixa':
+			$nfse = new Nfse(config($env));
+			$dir = $args[5] ?? null;
+			$lista = $nfse->listarPorFaixa(
+				exigir($args[1] ?? null, 'código IBGE do município emissor (cLocEmi)'),
+				exigir($args[2] ?? null, 'série'),
+				(int) exigir($args[3] ?? null, 'número inicial'),
+				(int) exigir($args[4] ?? null, 'número final'),
+				null !== $dir,
+				static function (array $i) use ($dir): void {
+					fwrite(\STDERR, sprintf("nDPS %d → %s\n", $i['nDPS'], $i['chaveAcesso']));
+					if (null !== $dir && null !== $i['nfseXml']) {
+						gravarEm($dir, $i['chaveAcesso'].'-nfse.xml', $i['nfseXml']);
+					}
+				},
+			);
+			saida(array_map(static fn(array $i) => ['nDPS' => $i['nDPS'], 'idDps' => $i['idDps'], 'chaveAcesso' => $i['chaveAcesso']], $lista));
+			break;
+
+		case 'sincronizar':
+			$nfse = new Nfse(config($env));
+			$dir = $args[2] ?? null;
+			$lote = $nfse->sincronizarDfe((int) exigir($args[1] ?? null, 'último NSU conhecido (0 para começar do zero)'), (int) ($args[3] ?? 20), static function ($pagina) use ($dir): void {
+				foreach ($pagina->documentos as $d) {
+					fwrite(\STDERR, sprintf("NSU %d %s %s %s\n", $d->nsu, $d->tipoDocumento, $d->chaveAcesso, $d->tipoEvento ?? ''));
+					if (null !== $dir && null !== ($xml = $d->xml())) {
+						gravarEm($dir, sprintf('nsu-%d-%s-%s.xml', $d->nsu, strtolower((string) $d->tipoDocumento), $d->chaveAcesso), $xml);
+					}
+				}
+			});
+			saida([
+				'ultimoNsu' => $lote->ultimoNsu,
+				'statusProcessamento' => $lote->statusProcessamento,
+				'documentos' => \count($lote->documentos),
+				'nfses' => \count($lote->nfses()),
+				'eventos' => \count($lote->eventos()),
+				'chavesCanceladas' => $lote->chavesCanceladas(),
+				'paginas' => $lote->paginas,
+				'temMais' => $lote->temMais,
+				'proximoComando' => 'nfse sincronizar '.$lote->ultimoNsu,
+			]);
+			break;
+
+		case 'danfse':
+			$pdf = (new Nfse(config($env)))->baixarDanfse(exigir($args[1] ?? null, 'chave de acesso'));
+			$destino = exigir($args[2] ?? null, 'arquivo de destino (.pdf)');
+			file_put_contents($destino, $pdf);
+			saida(['arquivo' => $destino, 'bytes' => \strlen($pdf)]);
+			break;
+
 		case 'convenio':
 			$r = (new Nfse(config($env)))->sefin()->consultarConvenioMunicipio(exigir($args[1] ?? null, 'código IBGE do município'));
 			saida($r->paraArray());
@@ -190,6 +245,14 @@ function gravar(?string $dir, RespostaSefin $r, ?string $dpsXml = null): void
 		file_put_contents("{$base}-{$nome}.xml", $xml);
 	}
 	fwrite(\STDERR, "Arquivos gravados com prefixo {$base}\n");
+}
+
+function gravarEm(string $dir, string $nome, string $conteudo): void
+{
+	if (!is_dir($dir) && !mkdir($dir, 0750, true)) {
+		throw new \InvalidArgumentException("Não foi possível criar o diretório {$dir}.");
+	}
+	file_put_contents(rtrim($dir, '/').'/'.$nome, $conteudo);
 }
 
 function saida(array $dados): void

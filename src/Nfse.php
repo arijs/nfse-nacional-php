@@ -2,6 +2,8 @@
 
 namespace Arijs\NfseNacional;
 
+use Arijs\NfseNacional\Adn\AdnContribuintes;
+use Arijs\NfseNacional\Adn\LoteDfe;
 use Arijs\NfseNacional\Assinatura\AssinadorXml;
 use Arijs\NfseNacional\Assinatura\PerfilAssinatura;
 use Arijs\NfseNacional\Dps\DpsXml;
@@ -38,6 +40,7 @@ final class Nfse
 	public const ERRO_ASSINATURA = 'E0714';
 
 	private readonly SefinNacional $sefin;
+	private readonly AdnContribuintes $adn;
 	private readonly ValidadorXsd $xsd;
 	private PerfilAssinatura $perfilAtivo;
 
@@ -47,6 +50,7 @@ final class Nfse
 	) {
 		$http ??= new ClienteHttpCurl($config->certificado, $config->timeoutSegundos, 10, $config->caBundle);
 		$this->sefin = new SefinNacional($config->ambiente, $http, $config->urlSefin);
+		$this->adn = new AdnContribuintes($config->ambiente, $http, $config->urlAdn);
 		$this->xsd = new ValidadorXsd();
 		$this->perfilAtivo = $config->perfilAssinatura;
 	}
@@ -56,9 +60,45 @@ final class Nfse
 		return $this->sefin;
 	}
 
+	public function adn(): AdnContribuintes
+	{
+		return $this->adn;
+	}
+
 	public function configuracao(): Configuracao
 	{
 		return $this->config;
+	}
+
+	/**
+	 * NFS-e emitidas pelo prestador do certificado numa faixa de números de
+	 * DPS (uma chamada por número). Ver {@see SefinNacional::listarPorFaixa}.
+	 *
+	 * @param null|\Closure(array{nDPS:int,idDps:string,chaveAcesso:string,nfseXml:?string}):void $aoEncontrar
+	 *
+	 * @return list<array{nDPS:int,idDps:string,chaveAcesso:string,nfseXml:?string}>
+	 */
+	public function listarPorFaixa(string $cLocEmi, string|int $serie, int $de, int $ate, bool $comXml = false, ?\Closure $aoEncontrar = null, ?string $cnpjOuCpf = null): array
+	{
+		return $this->sefin->listarPorFaixa($cLocEmi, $cnpjOuCpf ?? $this->inscricaoDoCertificado(), $serie, $de, $ate, $comXml, $aoEncontrar);
+	}
+
+	/**
+	 * Todos os documentos (notas emitidas, recebidas e eventos) do CNPJ a
+	 * partir do último NSU conhecido. Guarde `$lote->ultimoNsu` para a
+	 * próxima chamada. Ver {@see AdnContribuintes::sincronizar}.
+	 *
+	 * @param null|\Closure(LoteDfe):void $aoReceber chamado a cada página
+	 */
+	public function sincronizarDfe(int $ultimoNsu = 0, int $maxPaginas = 20, ?\Closure $aoReceber = null, ?string $cnpjConsulta = null): LoteDfe
+	{
+		return $this->adn->sincronizar($ultimoNsu, $maxPaginas, $cnpjConsulta, $aoReceber);
+	}
+
+	/** PDF oficial do DANFSe (ver observação em {@see AdnContribuintes::baixarDanfse}). */
+	public function baixarDanfse(string $chaveAcesso): string
+	{
+		return $this->adn->baixarDanfse($chaveAcesso);
 	}
 
 	/** Perfil em uso: o configurado, ou o que o fallback descobriu funcionar. */

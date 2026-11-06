@@ -14,8 +14,9 @@ Faz o ciclo inteiro de uma nota:
 5. interpreta a resposta: chave de acesso, XML da NFS-e gerada, erros com
    código (E0006, E1235...) e alertas.
 
-Também consulta NFS-e, consulta DPS, registra eventos (cancelamento) e lê
-parâmetros municipais. PHP ≥ 8.2 puro: só `ext-dom`, `ext-openssl`,
+Também consulta NFS-e, consulta DPS, registra eventos (cancelamento), lê
+parâmetros municipais, lista notas por faixa de números e sincroniza tudo
+que o CNPJ emitiu ou recebeu pela distribuição do ADN. PHP ≥ 8.2 puro: só `ext-dom`, `ext-openssl`,
 `ext-zlib`, `ext-curl`. Nenhuma dependência de framework nem de pacote de
 terceiros — pensada para rodar em hospedagem compartilhada.
 
@@ -134,6 +135,49 @@ Toda resposta é uma `RespostaSefin`: `sucesso()`, `status`, `erros()`,
 `alertas()`, `dados()` (JSON como veio), `xmls()` (XMLs já descomprimidos),
 `exigirSucesso()` (lança `SefinExcecao`).
 
+### Recuperar notas já emitidas
+
+A Sefin não tem endpoint de listagem; há dois caminhos.
+
+**Por faixa de números, na Sefin.** Como o número da DPS é sequencial e a
+série é sua, dá para varrer: para cada número a biblioteca monta o Id da
+DPS, pede a chave e, se quiser, o XML. Uma chamada por número (duas com o
+XML), então serve para faixas pequenas e reconciliação.
+
+```php
+$lista = $nfse->listarPorFaixa('3550308', serie: 1, de: 1, ate: 200, comXml: true);
+// [['nDPS' => 1, 'idDps' => 'DPS...', 'chaveAcesso' => '...', 'nfseXml' => '<NFSe...'], ...]
+```
+
+**Por NSU, no ADN.** O Ambiente de Dados Nacional dá a cada documento ligado
+ao seu CNPJ um número sequencial único. Pedindo "a partir do NSU N" vêm os
+seguintes, em páginas de até 50, com o XML embutido. Traz as notas em que
+você é prestador, tomador ou intermediário, emitidas por qualquer canal
+(API, página web, app), e os eventos de cancelamento. É o caminho para
+sincronizar: guarde o último NSU e cada rodada só busca o que é novo.
+
+```php
+$lote = $nfse->sincronizarDfe($ultimoNsuSalvo, maxPaginas: 20, aoReceber: function (LoteDfe $pagina) {
+    foreach ($pagina->documentos as $doc) {
+        // $doc->nsu, $doc->tipoDocumento ('NFSE'|'EVENTO'), $doc->chaveAcesso,
+        // $doc->tipoEvento ('CANCELAMENTO', 'SUBSTITUICAO', ...), $doc->xml()
+    }
+});
+$salvar($lote->ultimoNsu);          // próxima rodada começa daqui
+$lote->chavesCanceladas();          // notas invalidadas neste lote
+if ($lote->temMais) { /* rode de novo */ }
+```
+
+O formato do JSON do ADN (`StatusProcessamento`, `LoteDFe[]` com `NSU`,
+`TipoDocumento`, `ChaveAcesso`, `TipoEvento`, `DataHoraGeracao`,
+`ArquivoXml`) vem de implementações de referência validadas em homologação;
+o parser aceita também as variantes em camelCase. Confirme na primeira
+sincronização com o certificado real.
+
+`$nfse->baixarDanfse($chave)` pede o PDF oficial ao ADN. Esse serviço tem
+ficado indisponível por períodos (a NT 008 orienta gerar o DANFSe
+localmente); se ele falhar, não é defeito da integração.
+
 ### Idempotência e retomada
 
 A Sefin processa a DPS de forma síncrona. Se a conexão cair depois do envio,
@@ -153,6 +197,9 @@ vendor/bin/nfse validar examples/dps-exemplo.json --env=.env   # XML assinado, s
 vendor/bin/nfse emitir  examples/dps-exemplo.json ./saida --env=.env
 vendor/bin/nfse consultar <chave> ./saida --env=.env
 vendor/bin/nfse cancelar <chave> 1 "Nota emitida com valor incorreto" --env=.env
+vendor/bin/nfse faixa 3550308 1 1 50 ./xmls --env=.env       # notas da série 1, números 1 a 50
+vendor/bin/nfse sincronizar 0 ./xmls --env=.env              # tudo do CNPJ via ADN, a partir do NSU 0
+vendor/bin/nfse danfse <chave> nota.pdf --env=.env
 ```
 
 Sem `--env`, as variáveis são lidas do ambiente do processo.
@@ -166,7 +213,7 @@ Sem `--env`, as variáveis são lidas do ambiente do processo.
 | `NFSE_VERSAO_APLICATIVO` | texto do `verAplic` (até 20 caracteres) |
 | `NFSE_PERFIL_ASSINATURA` | `sha1` (padrão) ou `sha256`, ver abaixo |
 | `NFSE_FALLBACK_ASSINATURA` | `0` desliga a nova tentativa com o outro perfil após E0714 |
-| `NFSE_URL_SEFIN` | URL base alternativa (proxy, mock) |
+| `NFSE_URL_SEFIN`, `NFSE_URL_ADN` | URLs base alternativas (proxy, mock) |
 | `NFSE_TIMEOUT`, `NFSE_CA_BUNDLE` | timeout em segundos; CA bundle se o sistema não tiver |
 
 `Configuracao::doAmbiente()` lê tudo isso; o construtor aceita os mesmos
@@ -218,13 +265,12 @@ nova tentativa.
 
 ## O que não está coberto (ainda)
 
-- Geração do **DANFSe em PDF**: a Sefin devolve o XML; o PDF oficial pode ser
-  baixado do ADN (`/danfse/{chave}`) com o mesmo certificado — a URL está em
-  `Ambiente::urlAdn()`, mas não há helper pronto.
+- Geração **local** do DANFSe em PDF a partir do XML (há só o download do
+  PDF oficial, que depende do ADN estar servindo).
 - **IBS/CBS** com ajuda de preenchimento: o grupo `IBSCBS` pode ser passado no
   array, mas sem ordenação automática nem cálculo. Para Simples Nacional só
   é exigido a partir de 2027.
-- **Lote assíncrono** e consultas do ADN (distribuição por NSU).
+- **Lote assíncrono** de DPS.
 - **Certificado A3**.
 
 ## Desenvolvimento

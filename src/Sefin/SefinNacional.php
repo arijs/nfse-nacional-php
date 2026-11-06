@@ -3,6 +3,7 @@
 namespace Arijs\NfseNacional\Sefin;
 
 use Arijs\NfseNacional\Ambiente;
+use Arijs\NfseNacional\Dps\DpsXml;
 use Arijs\NfseNacional\Http\ClienteHttp;
 use Arijs\NfseNacional\Util\Formato;
 use Arijs\NfseNacional\Util\Gzip;
@@ -88,6 +89,52 @@ final class SefinNacional
 		}
 
 		return $this->chamar('consultarEventos', 'GET', $caminho);
+	}
+
+	/**
+	 * "Lista" as NFS-e de uma faixa de números de DPS, já que a Sefin não tem
+	 * endpoint de listagem: para cada número monta o Id da DPS, pede a chave
+	 * (GET /dps/{id}) e, se `$comXml`, a nota (GET /nfse/{chave}).
+	 *
+	 * Uma chamada HTTP por número (duas com XML): use em faixas pequenas ou
+	 * para reconciliar. Para sincronizar tudo, prefira o ADN
+	 * ({@see \Arijs\NfseNacional\Adn\AdnContribuintes::sincronizar}).
+	 *
+	 * Números sem NFS-e (404) são pulados; qualquer outro erro é lançado para
+	 * não mascarar falha de rede como "não existe".
+	 *
+	 * @param null|\Closure(array{nDPS:int,idDps:string,chaveAcesso:string,nfseXml:?string}):void $aoEncontrar
+	 *
+	 * @return list<array{nDPS:int,idDps:string,chaveAcesso:string,nfseXml:?string}>
+	 */
+	public function listarPorFaixa(string $cLocEmi, string $cnpjOuCpf, string|int $serie, int $de, int $ate, bool $comXml = false, ?\Closure $aoEncontrar = null): array
+	{
+		if ($de < 1 || $ate < $de) {
+			throw new \InvalidArgumentException("Faixa inválida: de {$de} até {$ate}.");
+		}
+		$encontradas = [];
+		for ($n = $de; $n <= $ate; ++$n) {
+			$id = DpsXml::idDps($cLocEmi, $cnpjOuCpf, $serie, $n);
+			$r = $this->consultarChavePorDps($id);
+			if (404 === $r->status) {
+				continue;
+			}
+			$r->exigirSucesso();
+			$chave = $r->chaveAcesso();
+			if (null === $chave) {
+				continue;
+			}
+			$item = ['nDPS' => $n, 'idDps' => $id, 'chaveAcesso' => $chave, 'nfseXml' => null];
+			if ($comXml) {
+				$item['nfseXml'] = $this->consultarNfse($chave)->exigirSucesso()->nfseXml();
+			}
+			$encontradas[] = $item;
+			if (null !== $aoEncontrar) {
+				$aoEncontrar($item);
+			}
+		}
+
+		return $encontradas;
 	}
 
 	public function consultarConvenioMunicipio(string $codigoMunicipio): RespostaSefin

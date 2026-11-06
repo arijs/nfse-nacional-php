@@ -21,6 +21,8 @@ final class Configuracao
 		public readonly bool $validarXsd = true,
 		/** Sobrescreve a URL da Sefin (ex.: proxy, mock local). */
 		public readonly ?string $urlSefin = null,
+		/** Sobrescreve a URL do ADN. */
+		public readonly ?string $urlAdn = null,
 		public readonly int $timeoutSegundos = 60,
 		/** Caminho de um CA bundle, se o servidor não tiver o do sistema. */
 		public readonly ?string $caBundle = null,
@@ -81,7 +83,8 @@ final class Configuracao
 	 *   NFSE_VERSAO_APLICATIVO   (opcional) texto do verAplic
 	 *   NFSE_PERFIL_ASSINATURA   (opcional) sha1 | sha256
 	 *   NFSE_FALLBACK_ASSINATURA (opcional) 0 desliga a tentativa com o outro perfil
-	 *   NFSE_URL_SEFIN           (opcional) URL base alternativa
+	 *   NFSE_URL_SEFIN           (opcional) URL base alternativa da Sefin
+	 *   NFSE_URL_ADN             (opcional) URL base alternativa do ADN
 	 *   NFSE_TIMEOUT             (opcional) segundos
 	 *   NFSE_CA_BUNDLE           (opcional) caminho do CA bundle
 	 *
@@ -118,6 +121,7 @@ final class Configuracao
 			versaoAplicativo: $ler('NFSE_VERSAO_APLICATIVO') ?: 'nfse-nacional/0.1',
 			perfilAssinatura: PerfilAssinatura::de($ler('NFSE_PERFIL_ASSINATURA') ?: 'sha1'),
 			urlSefin: $ler('NFSE_URL_SEFIN') ?: null,
+			urlAdn: $ler('NFSE_URL_ADN') ?: null,
 			timeoutSegundos: (int) ($ler('NFSE_TIMEOUT') ?: 60),
 			caBundle: $ler('NFSE_CA_BUNDLE') ?: null,
 			fallbackAssinatura: !\in_array(strtolower($ler('NFSE_FALLBACK_ASSINATURA')), ['0', 'false', 'nao', 'não', 'off'], true),
