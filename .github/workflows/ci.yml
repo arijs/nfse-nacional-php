@@ -16,7 +16,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, dom, json, libxml, openssl, zlib, mbstring
+          extensions: curl, dom, json, libxml, openssl, zlib, mbstring, gd, ctype, filter, xml
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: vendor/bin/phpunit

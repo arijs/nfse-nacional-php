@@ -19,7 +19,9 @@
  *                                    (uma chamada por número); com [dir] grava os XMLs
  *   nfse sincronizar <ultimoNsu> [dir] [maxPaginas]    distribuição do ADN a partir do NSU:
  *                                    notas emitidas, recebidas e eventos; grava XMLs em [dir]
- *   nfse danfse   <chave> <arquivo.pdf>   PDF oficial do DANFSe (quando o ADN o oferece)
+ *   nfse danfse   <chave> <arquivo.pdf>   PDF oficial do DANFSe baixado do ADN (quando ele o oferece)
+ *   nfse danfse-xml <nfse.xml> <arquivo.pdf> [--cancelada]   DANFSe no leiaute oficial, gerado
+ *                                    aqui a partir do XML autorizado (não precisa de certificado)
  *
  * Configuração por variáveis de ambiente (ou --env=arquivo.env):
  *   NFSE_AMBIENTE=2  NFSE_CERT_PFX=/caminho/cert.pfx  NFSE_CERT_SENHA=...
@@ -28,6 +30,7 @@
  */
 
 use Arijs\NfseNacional\Configuracao;
+use Arijs\NfseNacional\Danfse\DanfseOficial;
 use Arijs\NfseNacional\DescobertaPerfil;
 use Arijs\NfseNacional\Excecao\NfseExcecao;
 use Arijs\NfseNacional\Excecao\SefinExcecao;
@@ -177,6 +180,19 @@ try {
 			$destino = exigir($args[2] ?? null, 'arquivo de destino (.pdf)');
 			file_put_contents($destino, $pdf);
 			saida(['arquivo' => $destino, 'bytes' => \strlen($pdf)]);
+			break;
+
+		case 'danfse-xml':
+			$cancelada = \in_array('--cancelada', $args, true);
+			$args = array_values(array_filter($args, static fn (string $a): bool => '--cancelada' !== $a));
+			$arquivo = exigir($args[1] ?? null, 'arquivo XML da NFS-e autorizada');
+			if (!is_file($arquivo)) {
+				throw new \InvalidArgumentException("Arquivo não encontrado: {$arquivo}");
+			}
+			$destino = exigir($args[2] ?? null, 'arquivo de destino (.pdf)');
+			$pdf = (new DanfseOficial())->gerar((string) file_get_contents($arquivo), $cancelada);
+			file_put_contents($destino, $pdf);
+			saida(['arquivo' => $destino, 'bytes' => \strlen($pdf), 'cancelada' => $cancelada]);
 			break;
 
 		case 'convenio':

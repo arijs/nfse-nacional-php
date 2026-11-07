@@ -1,17 +1,19 @@
 {
     "name": "arijs/nfse-nacional",
-    "description": "Emissão de NFS-e pelo Sistema Nacional NFS-e (Sefin Nacional): DPS em XML, assinatura XMLDSig, validação XSD e cliente REST com mTLS. PHP puro, sem framework.",
+    "description": "Emissão de NFS-e pelo Sistema Nacional NFS-e (Sefin Nacional): DPS em XML, assinatura XMLDSig, validação XSD, cliente REST com mTLS e DANFSe em PDF no leiaute oficial. PHP puro, sem framework.",
     "type": "library",
     "license": "proprietary",
-    "keywords": ["nfse", "nfs-e", "sefin", "padrao-nacional", "dps", "fiscal"],
+    "keywords": ["nfse", "nfs-e", "sefin", "padrao-nacional", "dps", "danfse", "fiscal"],
     "require": {
         "php": ">=8.2",
         "ext-curl": "*",
         "ext-dom": "*",
         "ext-json": "*",
         "ext-libxml": "*",
+        "ext-mbstring": "*",
         "ext-openssl": "*",
-        "ext-zlib": "*"
+        "ext-zlib": "*",
+        "tecnickcom/tc-lib-pdf": "8.81.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.5"

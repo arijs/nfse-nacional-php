@@ -15,10 +15,13 @@ Faz o ciclo inteiro de uma nota:
    código (E0006, E1235...) e alertas.
 
 Também consulta NFS-e, consulta DPS, registra eventos (cancelamento), lê
-parâmetros municipais, lista notas por faixa de números e sincroniza tudo
-que o CNPJ emitiu ou recebeu pela distribuição do ADN. PHP ≥ 8.2 puro: só `ext-dom`, `ext-openssl`,
-`ext-zlib`, `ext-curl`. Nenhuma dependência de framework nem de pacote de
-terceiros — pensada para rodar em hospedagem compartilhada.
+parâmetros municipais, lista notas por faixa de números, sincroniza tudo
+que o CNPJ emitiu ou recebeu pela distribuição do ADN e **gera o DANFSe em
+PDF no leiaute oficial** a partir do XML autorizado. PHP ≥ 8.2 puro: só
+`ext-dom`, `ext-openssl`, `ext-zlib`, `ext-curl`, `ext-mbstring` e, para o
+PDF, [tecnickcom/tc-lib-pdf](https://github.com/tecnickcom/tc-lib-pdf)
+(também PHP puro). Nenhuma dependência de framework — pensada para rodar em
+hospedagem compartilhada.
 
 ## O que você precisa antes
 
@@ -184,7 +187,44 @@ em camelCase das implementações de referência continuam aceitas.
 
 `$nfse->baixarDanfse($chave)` pede o PDF oficial ao ADN. Esse serviço tem
 ficado indisponível por períodos (a NT 008 orienta gerar o DANFSe
-localmente); se ele falhar, não é defeito da integração.
+localmente); se ele falhar, não é defeito da integração — gere o DANFSe
+você mesmo, a partir do XML, como abaixo.
+
+### DANFSe em PDF, gerado localmente
+
+`DanfseOficial` desenha o DANFSe v2.0 — o mesmo documento que o Emissor
+Nacional gera — a partir do XML autorizado da NFS-e, sem rede e sem
+certificado. Caixas, rótulos, faixas cinza, QR Code da consulta pública
+(idêntico módulo a módulo ao do oficial), aviso "NFS-e SEM VALIDADE JURÍDICA"
+na produção restrita e o canhoto; posições medidas do PDF oficial. Uma
+página; o que não cabe é cortado com "...", como no oficial.
+
+```php
+use Arijs\NfseNacional\Danfse\DanfseOficial;
+
+$danfse = new DanfseOficial(
+    // Nome do município pelo código IBGE: o XML só traz o nome do município
+    // do EMITENTE; para um tomador de outra cidade a biblioteca pergunta
+    // aqui (sem isso, sai o código). Opcional.
+    municipio: fn (string $codigoIbge): ?string => $tabelaIbge[$codigoIbge] ?? null,
+    criador: 'Meu ERP 2.3',                 // campo Creator do PDF (opcional)
+);
+
+$pdf = $danfse->gerar($xmlNfse);                       // bytes do PDF
+$pdf = $danfse->gerar($xmlNfse, cancelada: true);      // "NFS-e CANCELADA" no topo e na situação
+
+header('Content-Type: application/pdf');
+echo $pdf;
+```
+
+`campos($xml)` devolve só os textos de cada caixa, já no formato do oficial
+(CNPJ pontuado, `R$ 1.234,56`, `35.50308 / 04.332-050`...), para quem quiser
+montar outra apresentação. A fonte do documento é a Helvetica core do PDF
+(não embutida; o oficial usa Arial, de métricas iguais). As métricas e o logo
+vetorial do Emissor Nacional vêm no pacote (`resources/danfse/`); a
+tc-lib-pdf os encontra pela constante `K_PATH_FONTS`, que a biblioteca
+define se a aplicação ainda não definiu — se a sua já aponta para outra
+pasta, copie `helvetica.json` e `helveticab.json` para lá.
 
 ### Idempotência e retomada
 
@@ -207,7 +247,8 @@ vendor/bin/nfse consultar <chave> ./saida --env=.env
 vendor/bin/nfse cancelar <chave> 1 "Nota emitida com valor incorreto" --env=.env
 vendor/bin/nfse faixa 3550308 1 1 50 ./xmls --env=.env       # notas da série 1, números 1 a 50
 vendor/bin/nfse sincronizar 0 ./xmls --env=.env              # tudo do CNPJ via ADN, a partir do NSU 0
-vendor/bin/nfse danfse <chave> nota.pdf --env=.env
+vendor/bin/nfse danfse <chave> nota.pdf --env=.env                # PDF oficial baixado do ADN
+vendor/bin/nfse danfse-xml nota.xml nota.pdf [--cancelada]         # DANFSe gerado aqui, a partir do XML
 ```
 
 Sem `--env`, as variáveis são lidas do ambiente do processo.
@@ -296,8 +337,8 @@ nova tentativa.
 
 ## O que não está coberto (ainda)
 
-- Geração **local** do DANFSe em PDF a partir do XML (há só o download do
-  PDF oficial, que depende do ADN estar servindo).
+- **IBS/CBS** no DANFSe: o bloco "TRIBUTAÇÃO IBS/CBS" sai com as caixas
+  vazias, como o oficial faz numa nota sem o grupo `IBSCBS`.
 - **IBS/CBS** com ajuda de preenchimento: o grupo `IBSCBS` pode ser passado no
   array, mas sem ordenação automática nem cálculo. Para Simples Nacional só
   é exigido a partir de 2027.
@@ -312,7 +353,9 @@ vendor/bin/phpunit
 ```
 
 Os testes geram um certificado autoassinado em memória, validam o XML contra
-os XSDs oficiais e verificam a assinatura; não tocam a rede. A única
+os XSDs oficiais e verificam a assinatura; não tocam a rede. O DANFSe é
+testado contra o XML real de uma nota da produção restrita e a matriz do QR
+lida do PDF oficial dessa nota (`tests/fixtures/`). A única
 alteração nos XSDs está documentada em `resources/xsd/1.01/ORIGEM.md`; a
 origem do pacote da NT 009 está em `resources/xsd/1.01-nt009/ORIGEM.md`.
 
