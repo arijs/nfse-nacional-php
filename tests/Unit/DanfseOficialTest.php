@@ -93,6 +93,59 @@ final class DanfseOficialTest extends TestCase
 		$this->assertSame(['3304557'], $pedidos);
 	}
 
+	/** Nota sem o grupo IBSCBS: as caixas saem como no DANFSe oficial dela. */
+	public function testSemOGrupoIbsCbsAsCaixasSaemComoNoOficial(): void
+	{
+		$c = (new DanfseOficial())->campos(self::xml());
+
+		$this->assertSame('- / -', $c['ibs_cst_class']);
+		$this->assertSame('- / - / - / -', $c['ibs_operacao']);
+		$this->assertSame(['R$ 0,00', '', '- / - / -', '- / -'], [$c['ibs_exclusoes'], $c['ibs_bc'], $c['ibs_red_aliq'], $c['ibs_aliq_uf_mun']]);
+		$this->assertSame(['', '', '', '', '', '', '', ''], [$c['ibs_aliq_efet_mun'], $c['ibs_v_mun'], $c['ibs_aliq_efet_uf'], $c['ibs_v_uf'], $c['ibs_v_tot'], $c['cbs_aliq'], $c['cbs_aliq_efet'], $c['cbs_v']]);
+		$this->assertSame(['R$ 0,00', 'R$ 1,00'], [$c['v_ibscbs'], $c['v_liquido_ibscbs']]);
+	}
+
+	/**
+	 * A mesma nota com o grupo IBSCBS (NT 009): a classificação vem da DPS
+	 * (CST, cClassTrib, cIndOp) e os valores do grupo da NFS-e (o que a Sefin
+	 * calculou). IBS e CBS são por fora: o líquido "+ IBS/CBS" soma os dois.
+	 */
+	public function testComOGrupoIbsCbsImprimeAClassificacaoEOsValoresDaSefin(): void
+	{
+		$xml = (string) file_get_contents(__DIR__.'/../fixtures/nfse-autorizada-teste-ibscbs.xml');
+		$c = (new DanfseOficial())->campos($xml);
+
+		$this->assertSame('000 / 000001', $c['ibs_cst_class']);
+		$this->assertSame('100301 / 35.50308 / São Paulo / SP', $c['ibs_operacao']);
+		$this->assertSame(['R$ 0,00', 'R$ 1,00', '- / - / -', '0,10% / 0,00%'], [$c['ibs_exclusoes'], $c['ibs_bc'], $c['ibs_red_aliq'], $c['ibs_aliq_uf_mun']]);
+		$this->assertSame(['0,00%', 'R$ 0,00', '0,10%', 'R$ 0,00', 'R$ 0,00'], [$c['ibs_aliq_efet_mun'], $c['ibs_v_mun'], $c['ibs_aliq_efet_uf'], $c['ibs_v_uf'], $c['ibs_v_tot']]);
+		$this->assertSame(['0,90%', '0,90%', 'R$ 0,01'], [$c['cbs_aliq'], $c['cbs_aliq_efet'], $c['cbs_v']]);
+		$this->assertSame(['R$ 1,00', 'R$ 0,01', 'R$ 1,01'], [$c['v_liquido'], $c['v_ibscbs'], $c['v_liquido_ibscbs']]);
+		// O resto da nota não muda.
+		$this->assertSame('35503082203172223000124000000000000326114655034896', $c['chave']);
+
+		// E o PDF leva os textos (sem comprimir, para procurar neles).
+		$pdf = (new DanfseOficial())->gerar($xml, comprimir: false);
+		foreach (['000 / 000001', '100301 / 35.50308 / S', '0,90%', 'R$ 1,01'] as $texto) {
+			$this->assertStringContainsString($texto, $pdf, $texto);
+		}
+	}
+
+	/** No leiaute 1.01 (produção) a classificação fica em valores/trib/gIBSCBS, com finNFSe antes do cIndOp. */
+	public function testLeiaute101GuardaAClassificacaoEmGIBSCBS(): void
+	{
+		$xml = (string) preg_replace(
+			['~<cIndOp>100301</cIndOp>~', '~<trib>(\s*<CST>000</CST>\s*<cClassTrib>000001</cClassTrib>\s*)</trib>~'],
+			['<finNFSe>0</finNFSe><cIndOp>100301</cIndOp>', '<trib><gIBSCBS>$1</gIBSCBS></trib>'],
+			(string) file_get_contents(__DIR__.'/../fixtures/nfse-autorizada-teste-ibscbs.xml'),
+		);
+		$this->assertSame(1, substr_count($xml, '<gIBSCBS>'), 'o <trib> da DPS (ISSQN) não é o do IBSCBS');
+		$c = (new DanfseOficial())->campos($xml);
+
+		$this->assertSame('000 / 000001', $c['ibs_cst_class']);
+		$this->assertSame('100301 / 35.50308 / São Paulo / SP', $c['ibs_operacao']);
+	}
+
 	public function testNotaCanceladaDizIssoNaSituacao(): void
 	{
 		$this->assertSame('NFS-e Cancelada', (new DanfseOficial())->campos(self::xml(), cancelada: true)['situacao']);

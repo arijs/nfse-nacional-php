@@ -197,7 +197,13 @@ Nacional gera — a partir do XML autorizado da NFS-e, sem rede e sem
 certificado. Caixas, rótulos, faixas cinza, QR Code da consulta pública
 (idêntico módulo a módulo ao do oficial), aviso "NFS-e SEM VALIDADE JURÍDICA"
 na produção restrita e o canhoto; posições medidas do PDF oficial. Uma
-página; o que não cabe é cortado com "...", como no oficial.
+página; o que não cabe é cortado com "...", como no oficial. O bloco
+"TRIBUTAÇÃO IBS/CBS" sai preenchido quando a nota traz o grupo `IBSCBS`: a
+classificação vem da DPS (CST, cClassTrib, indicador da operação, nos dois
+leiautes) e os valores do grupo da NFS-e (o que a Sefin calculou — base,
+alíquotas, IBS estadual/municipal, CBS); "Total do IBS/CBS" e "VALOR LÍQUIDO
+DA NFS-e + IBS/CBS" somam os dois, que são por fora. Nota sem o grupo sai
+como no oficial dela.
 
 ```php
 use Arijs\NfseNacional\Danfse\DanfseOficial;
@@ -337,8 +343,9 @@ nova tentativa.
 
 ## O que não está coberto (ainda)
 
-- **IBS/CBS** no DANFSe: o bloco "TRIBUTAÇÃO IBS/CBS" sai com as caixas
-  vazias, como o oficial faz numa nota sem o grupo `IBSCBS`.
+- **IBS/CBS** no DANFSe: crédito presumido, diferimento, tributação regular
+  e compra governamental (`gIBSCredPres`, `vDif*`, `gTribRegular`,
+  `gTribCompraGov`) não têm caixa no DANFSe v2.0 e não são impressos.
 - **IBS/CBS** com ajuda de preenchimento: o grupo `IBSCBS` pode ser passado no
   array, mas sem ordenação automática nem cálculo. Para Simples Nacional só
   é exigido a partir de 2027.

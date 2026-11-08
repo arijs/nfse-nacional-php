@@ -101,6 +101,18 @@ final class DanfseOficial
 		$cServ = $this->no('n:serv/n:cServ', $dps);
 		$vInf = $this->no('n:valores', $inf);
 		$vDps = $this->no('n:valores', $dps);
+		// IBS/CBS (reforma tributária): a classificação vem da DPS (o que o
+		// emitente declarou), os valores do grupo da NFS-e (o que a Sefin calculou).
+		$ibsDps = $this->no('n:IBSCBS', $dps);
+		$ibsNf = $this->no('n:IBSCBS', $inf);
+		// A classificação fica em valores/trib/gIBSCBS (leiaute 1.01) ou em valores/trib (NT 009).
+		$ibsTrib = $this->no('n:valores/n:trib/n:gIBSCBS', $ibsDps) ?? $this->no('n:valores/n:trib', $ibsDps);
+		$ibsVal = $this->no('n:valores', $ibsNf);
+		$ibsTot = $this->no('n:totCIBS', $ibsNf);
+		$cLocIbs = $this->t('n:cLocalidadeIncid', $ibsNf);
+		$vIbs = (float) $this->t('n:gIBS/n:vIBSTot', $ibsTot);
+		$vCbs = (float) $this->t('n:gCBS/n:vCBS', $ibsTot);
+		$vLiq = $this->t('n:vLiq', $vInf);
 
 		$cMunEmit = $this->t('n:enderNac/n:cMun', $emit);
 		$cMunToma = $this->t('n:end/n:endNac/n:cMun', $toma);
@@ -185,11 +197,40 @@ final class DanfseOficial
 			'desc_cond' => self::reais($this->t('n:vDescCondIncond/n:vDescCond', $vDps)),
 			'v_retencoes' => self::reais($this->t('n:vTotalRet', $vInf)),
 			'v_liquido' => self::reais($this->t('n:vLiq', $vInf)),
-			// Sem o grupo IBSCBS (NT 004), o total de IBS/CBS é zero e o líquido
+			// IBS/CBS (NT 004): o bloco "TRIBUTAÇÃO IBS/CBS" do oficial. Sem o
+			// grupo, as caixas saem como no oficial de uma nota sem ele.
+			'ibs_cst_class' => ($this->t('n:CST', $ibsTrib) ?: '-').' / '.($this->t('n:cClassTrib', $ibsTrib) ?: '-'),
+			'ibs_operacao' => implode(' / ', [
+				$this->t('n:cIndOp', $ibsDps) ?: '-',
+				'' === $cLocIbs ? '-' : self::ibge($cLocIbs),
+				'' === $cLocIbs ? '-' : ($this->t('n:xLocalidadeIncid', $ibsNf) ?: $this->nomeMunicipio($cLocIbs, $cMunEmit)),
+				'' === $cLocIbs ? '-' : self::uf($cLocIbs),
+			]),
+			'ibs_exclusoes' => null === $ibsVal ? 'R$ 0,00' : self::reais((string) array_sum(array_map(
+				fn (string $e): float => (float) $this->t('n:'.$e, $ibsVal),
+				['vCalcAjusteBCLocImoveis', 'vCalcAjusteBCIBSCBS', 'vCalcReeRepRes'],
+			))),
+			'ibs_bc' => self::reais($this->t('n:vBC', $ibsVal)),
+			'ibs_red_aliq' => null === $ibsVal ? '- / - / -' : implode(' / ', [
+				self::pct($this->t('n:uf/n:pRedAliqUF', $ibsVal)) ?: '-',
+				self::pct($this->t('n:mun/n:pRedAliqMun', $ibsVal)) ?: '-',
+				self::pct($this->t('n:fed/n:pRedAliqCBS', $ibsVal)) ?: '-',
+			]),
+			'ibs_aliq_uf_mun' => null === $ibsVal ? '- / -' : (self::pct($this->t('n:uf/n:pIBSUF', $ibsVal)) ?: '-').' / '.(self::pct($this->t('n:mun/n:pIBSMun', $ibsVal)) ?: '-'),
+			'ibs_aliq_efet_mun' => self::pct($this->t('n:mun/n:pAliqEfetMun', $ibsVal)),
+			'ibs_v_mun' => self::reais($this->t('n:gIBS/n:gIBSMunTot/n:vIBSMun', $ibsTot)),
+			'ibs_aliq_efet_uf' => self::pct($this->t('n:uf/n:pAliqEfetUF', $ibsVal)),
+			'ibs_v_uf' => self::reais($this->t('n:gIBS/n:gIBSUFTot/n:vIBSUF', $ibsTot)),
+			'ibs_v_tot' => self::reais($this->t('n:gIBS/n:vIBSTot', $ibsTot)),
+			'cbs_aliq' => self::pct($this->t('n:fed/n:pCBS', $ibsVal)),
+			'cbs_aliq_efet' => self::pct($this->t('n:fed/n:pAliqEfetCBS', $ibsVal)),
+			'cbs_v' => self::reais($this->t('n:gCBS/n:vCBS', $ibsTot)),
+			// Sem o grupo IBSCBS, o total de IBS/CBS é zero e o líquido
 			// "+ IBS/CBS" é o próprio líquido. (O oficial imprime R$ 0,00 aí —
-			// erro dele; aqui sai o valor.)
-			'v_ibscbs' => 'R$ 0,00',
-			'v_liquido_ibscbs' => self::reais($this->t('n:vLiq', $vInf)) ?: 'R$ 0,00',
+			// erro dele; aqui sai o valor.) Com o grupo, IBS e CBS são por fora:
+			// o total é vIBSTot + vCBS e o líquido "+ IBS/CBS" soma os dois.
+			'v_ibscbs' => self::reais(null === $ibsTot ? '0' : (string) ($vIbs + $vCbs)),
+			'v_liquido_ibscbs' => '' === $vLiq ? 'R$ 0,00' : self::reais((string) ((float) $vLiq + $vIbs + $vCbs)),
 
 			'info' => trim(sprintf(
 				'Totais aproximados dos Tributos cfe. Lei n° 12.741/2012: Federais: %s; Estaduais: %s; Municipais: %s; %s',
@@ -347,16 +388,17 @@ final class DanfseOficial
 		$this->campo('COFINS - Débito Apuração Própria', $c['cofins'], self::C2, $y + 8.81);
 		$this->campo('Descrição Contrib. Sociais - Retidas', '', self::C3, $y + 8.81);
 
-		// IBS/CBS (NT 004, reforma tributária): a plataforma ainda não emite o
-		// grupo IBSCBS — as caixas saem como no oficial de uma nota sem ele.
+		// IBS/CBS (NT 004, reforma tributária): a classificação da DPS e os
+		// valores que a Sefin calculou; numa nota sem o grupo IBSCBS as caixas
+		// saem como no oficial ("- / -", "R$ 0,00", vazias).
 		$y = 142.90;
 		$this->cabecalhoBloco($y, 'TRIBUTAÇÃO IBS/CBS');
-		$this->campo('CST / cClassTrib', '- / -', self::C2, $y + 2.08);
-		$this->campo('Indicador de Operação / Código IBGE Incidência / Município Incidência / Sigla UF', '- / - / - / -', self::C3, $y + 2.08, 100);
+		$this->campo('CST / cClassTrib', $c['ibs_cst_class'], self::C2, $y + 2.08);
+		$this->campo('Indicador de Operação / Código IBGE Incidência / Município Incidência / Sigla UF', $c['ibs_operacao'], self::C3, $y + 2.08, 100);
 		$linhas = [
-			['Exclusões e Reduções da Base de Cálculo', 'R$ 0,00', 'Base de Cálculo Após Exclusões e Reduções', '', 'Red. Alíquota IBS / Red. Alíquota CBS', '- / - / -', 'Alíquota - IBS UF / IBS Mun', '- / -'],
-			['Alíq. Efetiva Municipal - IBS', '', 'Valor Apurado Municipal - IBS', '', 'Alíq. Efetiva Estadual - IBS', '', 'Valor Apurado Estadual - IBS', ''],
-			['Valor Total Apurado - IBS', '', 'Alíquota - CBS', '', 'Alíquota Efetiva - CBS', '', 'Valor Total Apurado - CBS', ''],
+			['Exclusões e Reduções da Base de Cálculo', $c['ibs_exclusoes'], 'Base de Cálculo Após Exclusões e Reduções', $c['ibs_bc'], 'Red. Alíquota IBS / Red. Alíquota CBS', $c['ibs_red_aliq'], 'Alíquota - IBS UF / IBS Mun', $c['ibs_aliq_uf_mun']],
+			['Alíq. Efetiva Municipal - IBS', $c['ibs_aliq_efet_mun'], 'Valor Apurado Municipal - IBS', $c['ibs_v_mun'], 'Alíq. Efetiva Estadual - IBS', $c['ibs_aliq_efet_uf'], 'Valor Apurado Estadual - IBS', $c['ibs_v_uf']],
+			['Valor Total Apurado - IBS', $c['ibs_v_tot'], 'Alíquota - CBS', $c['cbs_aliq'], 'Alíquota Efetiva - CBS', $c['cbs_aliq_efet'], 'Valor Total Apurado - CBS', $c['cbs_v']],
 		];
 		foreach ($linhas as $i => $l) {
 			$ly = $y + 8.80 + $i * self::PASSO;

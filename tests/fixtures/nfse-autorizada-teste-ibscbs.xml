@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
+  <infNFSe Id="NFS35503082203172223000124000000000000326114655034896">
+    <xLocEmi>São Paulo</xLocEmi>
+    <xLocPrestacao>São Paulo</xLocPrestacao>
+    <nNFSe>3</nNFSe>
+    <cLocIncid>3550308</cLocIncid>
+    <xLocIncid>São Paulo</xLocIncid>
+    <xTribNac>Suporte técnico em informática, inclusive instalação, configuração e manutenção de programas de computação e bancos de dados.</xTribNac>
+    <xTribMun>Suporte técnico em informática, inclusive instalação, configuração e manutenção de programas de computação e bancos de dados. (Vigência a partir de 13/02/2018 - Instrução Normativa SF/SUREM nº 23, de 22 de dezembro de 2017)</xTribMun>
+    <xNBS>Serviços em tecnologia da informação (TI) não classificados em subposições anteriores</xNBS>
+    <verAplic>SefinNacional_1.6.0</verAplic>
+    <ambGer>2</ambGer>
+    <tpEmis>1</tpEmis>
+    <procEmi>1</procEmi>
+    <cStat>100</cStat>
+    <dhProc>2026-11-06T18:32:49-03:00</dhProc>
+    <nDFSe>30106</nDFSe>
+    <emit>
+      <CNPJ>03172223000124</CNPJ>
+      <IM>000000028065646</IM>
+      <xNome>SPCA BRASIL COMUNICACAO DIGITAL LTDA</xNome>
+      <enderNac>
+        <xLgr>Avenida José Estevão de Magalhães</xLgr>
+        <nro>00052</nro>
+        <xCpl>SALA 01</xCpl>
+        <xBairro>Vila Campestre</xBairro>
+        <cMun>3550308</cMun>
+        <UF>SP</UF>
+        <CEP>04332050</CEP>
+      </enderNac>
+    </emit>
+    <valores>
+      <vLiq>1.00</vLiq>
+    </valores>
+    <IBSCBS>
+      <cLocalidadeIncid>3550308</cLocalidadeIncid>
+      <xLocalidadeIncid>São Paulo</xLocalidadeIncid>
+      <valores>
+        <vBC>1.00</vBC>
+        <uf>
+          <pIBSUF>0.10</pIBSUF>
+          <pAliqEfetUF>0.10</pAliqEfetUF>
+        </uf>
+        <mun>
+          <pIBSMun>0.00</pIBSMun>
+          <pAliqEfetMun>0.00</pAliqEfetMun>
+        </mun>
+        <fed>
+          <pCBS>0.90</pCBS>
+          <pAliqEfetCBS>0.90</pAliqEfetCBS>
+        </fed>
+      </valores>
+      <totCIBS>
+        <vTotNF>1.01</vTotNF>
+        <gIBS>
+          <vIBSTot>0.00</vIBSTot>
+          <gIBSUFTot>
+            <vIBSUF>0.00</vIBSUF>
+          </gIBSUFTot>
+          <gIBSMunTot>
+            <vIBSMun>0.00</vIBSMun>
+          </gIBSMunTot>
+        </gIBS>
+        <gCBS>
+          <vCBS>0.01</vCBS>
+        </gCBS>
+      </totCIBS>
+    </IBSCBS>
+    <DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
+      <infDPS Id="DPS355030820317222300012400001000000000000001">
+        <tpAmb>2</tpAmb>
+        <dhEmi>2026-11-06T18:32:46-03:00</dhEmi>
+        <verAplic>ddsoft-online/1.0</verAplic>
+        <serie>1</serie>
+        <nDPS>1</nDPS>
+        <dCompet>2026-11-01</dCompet>
+        <tpEmit>1</tpEmit>
+        <finNFSe>0</finNFSe>
+        <cLocEmi>3550308</cLocEmi>
+        <prest>
+          <CNPJ>03172223000124</CNPJ>
+          <IM>000000028065646</IM>
+          <regTrib>
+            <opSimpNac>3</opSimpNac>
+            <regApTribSN>1</regApTribSN>
+            <regEspTrib>0</regEspTrib>
+          </regTrib>
+        </prest>
+        <toma>
+          <CNPJ>12457402000107</CNPJ>
+          <xNome>HENGLES SERVICOS DE INTERNET LTDA</xNome>
+          <end>
+            <endNac>
+              <cMun>3550308</cMun>
+              <CEP>04773090</CEP>
+            </endNac>
+            <xLgr>Rua ESTORIL</xLgr>
+            <nro>285</nro>
+            <xBairro>VELEIROS</xBairro>
+          </end>
+          <email>rhengles@gmail.com</email>
+        </toma>
+        <serv>
+          <locPrest>
+            <cLocPrestacao>3550308</cLocPrestacao>
+          </locPrest>
+          <cServ>
+            <cTribNac>010701</cTribNac>
+            <cTribMun>001</cTribMun>
+            <cNBS>115100000</cNBS>
+            <xDescServ>Licença de uso DDSOFT - competência nov/2026. Pagamento #2083.</xDescServ>
+          </cServ>
+        </serv>
+        <valores>
+          <vServPrest>
+            <vServ>1.00</vServ>
+          </vServPrest>
+          <trib>
+            <tribMun>
+              <tribISSQN>1</tribISSQN>
+              <tpRetISSQN>1</tpRetISSQN>
+            </tribMun>
+            <totTrib>
+              <pTotTribSN>6.00</pTotTribSN>
+            </totTrib>
+          </trib>
+        </valores>
+        <IBSCBS>
+          <cIndOp>100301</cIndOp>
+          <indDest>0</indDest>
+          <valores>
+            <trib>
+              <CST>000</CST>
+              <cClassTrib>000001</cClassTrib>
+            </trib>
+          </valores>
+        </IBSCBS>
+      </infDPS>
+    </DPS>
+  </infNFSe>
+</NFSe>
