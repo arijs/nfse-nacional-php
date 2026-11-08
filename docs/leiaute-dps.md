@@ -47,7 +47,7 @@ exterior: `NIF` ou `cNaoNIF`, e `end.endExt`.
 |---|---|---|
 | `locPrest.cLocPrestacao` | sim | IBGE do local da prestação (ou `cPaisPrestacao` no exterior) |
 | `cServ.cTribNac` | sim | código de tributação nacional, 6 dígitos: item (2) + subitem (2) + desdobro (2). Ex.: 01.07 → `010700`, desdobro 01 → `010701`. Lista oficial: Anexo B |
-| `cServ.cTribMun` | condicional | código municipal, se o município exigir (consulte `parametros_municipais`) |
+| `cServ.cTribMun` | condicional | código municipal, se o município exigir (consulte os parâmetros municipais do ADN: `Nfse::parametrizacao()`) |
 | `cServ.xDescServ` | sim | discriminação, até 2000 caracteres. No leiaute NT 009 vai para o fim de `cServ` (a biblioteca ordena) |
 | `cServ.cNBS` | não | Nomenclatura Brasileira de Serviços (9 dígitos) |
 | `infoCompl.xInfComp` | não | informações complementares, até 2000 |

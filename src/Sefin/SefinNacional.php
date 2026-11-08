@@ -19,7 +19,7 @@ use Arijs\NfseNacional\Util\Gzip;
  *  HEAD /dps/{id}                      a DPS já virou NFS-e?
  *  POST /nfse/{chaveAcesso}/eventos    pedido de registro de evento (cancelamento etc.)
  *  GET  /nfse/{chaveAcesso}/eventos[/{tipo}[/{seq}]]
- *  GET  /parametros_municipais/{cMun}/...
+ *  (parâmetros municipais: ficam no ADN — {@see \Arijs\NfseNacional\Adn\AdnParametrizacao})
  *
  * Esta classe só fala JSON com a API. Montar, validar e assinar o XML é
  * trabalho de {@see \Arijs\NfseNacional\Nfse}.
@@ -137,18 +137,19 @@ final class SefinNacional
 		return $encontradas;
 	}
 
+	/** @deprecated a rota não existe na Sefin (404 em produção, 08/11/2026): use {@see \Arijs\NfseNacional\Nfse::parametrizacao()}. */
 	public function consultarConvenioMunicipio(string $codigoMunicipio): RespostaSefin
 	{
 		return $this->chamar('parametrosConvenio', 'GET', '/parametros_municipais/'.Formato::somenteDigitos($codigoMunicipio).'/convenio');
 	}
 
-	/** Alíquotas, regimes especiais e deduções do subitem da lista de serviços no município. */
+	/** @deprecated a rota não existe na Sefin (404 em produção, 08/11/2026): use {@see \Arijs\NfseNacional\Nfse::parametrizacao()}. */
 	public function consultarParametrosServico(string $codigoMunicipio, string $codigoServico): RespostaSefin
 	{
 		return $this->chamar('parametrosServico', 'GET', '/parametros_municipais/'.Formato::somenteDigitos($codigoMunicipio).'/'.Formato::somenteDigitos($codigoServico));
 	}
 
-	/** Retenções e benefícios do contribuinte no município. */
+	/** @deprecated a rota não existe na Sefin (404 em produção, 08/11/2026): use {@see \Arijs\NfseNacional\Nfse::parametrizacao()}. */
 	public function consultarParametrosContribuinte(string $codigoMunicipio, string $cnpjOuCpf): RespostaSefin
 	{
 		return $this->chamar('parametrosContribuinte', 'GET', '/parametros_municipais/'.Formato::somenteDigitos($codigoMunicipio).'/'.Formato::somenteDigitos($cnpjOuCpf));

@@ -127,7 +127,10 @@ $nfse->sefin()->consultarChavePorDps($idDps);    // GET /dps/{id}
 $nfse->sefin()->dpsProcessada($idDps);           // HEAD /dps/{id} — útil para retomar após timeout
 $nfse->sefin()->consultarEventos($chave);
 $nfse->sefin()->consultarConvenioMunicipio('3550308');
-$nfse->sefin()->consultarParametrosServico('3550308', '010701');
+// Parâmetros municipais: ficam no ADN (/parametrizacao), não na Sefin.
+$nfse->parametrizacao()->convenio('3550308');
+$nfse->parametrizacao()->historicoAliquotas('3550308', '010701001'); // código nacional + desdobro municipal
+$nfse->parametrizacao()->aliquota('3550308', '010701001', '2026-11-08');
 
 // Etapas separadas, para guardar o XML assinado antes de enviar:
 $xmlAssinado = $nfse->prepararDps($infDps);

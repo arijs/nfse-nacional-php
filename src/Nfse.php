@@ -3,6 +3,7 @@
 namespace Arijs\NfseNacional;
 
 use Arijs\NfseNacional\Adn\AdnContribuintes;
+use Arijs\NfseNacional\Adn\AdnParametrizacao;
 use Arijs\NfseNacional\Adn\LoteDfe;
 use Arijs\NfseNacional\Assinatura\AssinadorXml;
 use Arijs\NfseNacional\Assinatura\PerfilAssinatura;
@@ -41,6 +42,7 @@ final class Nfse
 
 	private readonly SefinNacional $sefin;
 	private readonly AdnContribuintes $adn;
+	private readonly AdnParametrizacao $parametrizacao;
 	private readonly ValidadorXsd $xsd;
 	private PerfilAssinatura $perfilAtivo;
 
@@ -51,6 +53,7 @@ final class Nfse
 		$http ??= new ClienteHttpCurl($config->certificado, $config->timeoutSegundos, 10, $config->caBundle);
 		$this->sefin = new SefinNacional($config->ambiente, $http, $config->urlSefin);
 		$this->adn = new AdnContribuintes($config->ambiente, $http, $config->urlAdn);
+		$this->parametrizacao = new AdnParametrizacao($config->ambiente, $http, $config->urlAdn);
 		$this->xsd = new ValidadorXsd();
 		$this->perfilAtivo = $config->perfilAssinatura;
 	}
@@ -63,6 +66,12 @@ final class Nfse
 	public function adn(): AdnContribuintes
 	{
 		return $this->adn;
+	}
+
+	/** Parâmetros municipais (alíquotas, convênio, regimes) no ADN. */
+	public function parametrizacao(): AdnParametrizacao
+	{
+		return $this->parametrizacao;
 	}
 
 	public function configuracao(): Configuracao
